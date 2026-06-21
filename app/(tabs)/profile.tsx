@@ -1,5 +1,6 @@
 import React from "react";
 import { Button, StyleSheet, View } from "react-native";
+import { router } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -24,9 +25,9 @@ export default function ProfileScreen() {
         <ThemedText>Goal: Build strength and consistency</ThemedText>
       </ThemedView>
       <View style={styles.actions}>
-        <Button title="Edit Profile" onPress={() => {}} />
-        <Button title="Subscriptions" onPress={() => {}} />
-        <Button title="Settings" onPress={() => {}} />
+        <Button title="Edit Profile" onPress={() =>  { router.push("/editprofile")}} />
+        <Button title="Subscriptions" onPress={() => {router.push("/subscriptions")}} />
+        <Button title="Settings" onPress={() => { router.push("/settings")}} />
       </View>
       {user ? (
         <Button title="Log out" onPress={logout} />

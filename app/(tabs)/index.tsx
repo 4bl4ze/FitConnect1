@@ -1,4 +1,6 @@
 import { StyleSheet, View } from "react-native";
+import { Pressable } from "react-native";
+import { router } from "expo-router";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
@@ -101,22 +103,37 @@ export default function Dashboard() {
           <ThemedText type="defaultSemiBold">
             Current streak: 12 days
           </ThemedText>
-          <ThemedText>Keep it up — you're doing great.</ThemedText>
+          <ThemedText>Keep it up — you are doing great.</ThemedText>
         </ThemedView>
       </ThemedView>
 
       <ThemedView style={styles.section}>
         <ThemedText type="subtitle">Quick Actions</ThemedText>
         <View style={styles.actionsRow}>
-          <ThemedView style={[styles.actionBtn, { backgroundColor: actionBg }]}>
-            <ThemedText type="defaultSemiBold">Start Workout</ThemedText>
-          </ThemedView>
-          <ThemedView style={[styles.actionBtn, { backgroundColor: actionBg }]}>
-            <ThemedText type="defaultSemiBold">AI Trainer</ThemedText>
-          </ThemedView>
-          <ThemedView style={[styles.actionBtn, { backgroundColor: actionBg }]}>
-            <ThemedText type="defaultSemiBold">Book Trainer</ThemedText>
-          </ThemedView>
+         <Pressable
+  style={[styles.actionBtn, { backgroundColor: actionBg }]}
+  onPress={() => router.push("/Workout")}
+>
+  <ThemedText type="defaultSemiBold">
+    Start Workout
+  </ThemedText>
+</Pressable>
+  <Pressable
+  style={[styles.actionBtn, { backgroundColor: actionBg }]}
+  onPress={() => router.push("/AI")}
+>
+  <ThemedText type="defaultSemiBold">
+    AI Trainer
+  </ThemedText>
+</Pressable>
+          <Pressable
+  style={[styles.actionBtn, { backgroundColor: actionBg }]}
+  onPress={() => router.push("/bookTrainer")}
+>
+  <ThemedText type="defaultSemiBold">
+    Book Trainer
+  </ThemedText>
+</Pressable>
         </View>
       </ThemedView>
     </ParallaxScrollView>
