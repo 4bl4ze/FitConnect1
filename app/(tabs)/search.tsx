@@ -102,7 +102,11 @@ export default function SearchScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView 
+      style={[styles.scrollView, { backgroundColor }]} 
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <ThemedText type="title">Search</ThemedText>
       <TextInput
         style={[
@@ -214,7 +218,13 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, gap: 16, paddingBottom: 40 },
+  ScrollView:{
+    flex:1,
+  },
+  container: { 
+    padding: 20, 
+    gap: 16, 
+    paddingBottom: 40 },
   search: {
     height: 52,
     borderRadius: 14,
