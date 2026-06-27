@@ -90,6 +90,8 @@ export default function SettingsScreen() {
         <Switch
           value={notifications}
           onValueChange={setNotifications}
+          trackColor={{ false: "#767577", true: "#007AFF" }} // Added Blue active color
+          thumbColor={notifications ? "#FFFFFF" : "#F4F3F4"}
         />
       </ThemedView>
 
@@ -106,6 +108,8 @@ export default function SettingsScreen() {
         <Switch
           value={darkMode}
           onValueChange={setDarkMode}
+          trackColor={{ false: "#767577", true: "#007AFF" }} // Added Blue active color
+          thumbColor={notifications ? "#FFFFFF" : "#F4F3F4"}
         />
       </ThemedView>
 
@@ -122,6 +126,8 @@ export default function SettingsScreen() {
         <Switch
           value={autoPlayVideos}
           onValueChange={setAutoPlayVideos}
+          trackColor={{ false: "#767577", true: "#007AFF" }} // Added Blue active color
+          thumbColor={notifications ? "#FFFFFF" : "#F4F3F4"}
         />
       </ThemedView>
 
@@ -182,7 +188,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
-    backgroundColor: "#F59E0B",
+    backgroundColor: "red",
   },
   backButton: {
     padding: 16,
