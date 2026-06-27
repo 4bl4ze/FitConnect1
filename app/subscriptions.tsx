@@ -65,7 +65,7 @@ export default function SubscriptionScreen() {
                 backgroundColor: cardBg,
                 borderColor:
                   selectedPlan === plan
-                    ? "#4CAF50"
+                    ? "#007AFF"
                     : "#D1D5DB",
               },
             ]}
