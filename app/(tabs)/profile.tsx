@@ -48,6 +48,9 @@ const styles = StyleSheet.create({
     gap: 20,
     paddingBottom: 40,
   },
+
+  
+
   profileCard: {
     padding: 24,
     borderRadius: 22,
