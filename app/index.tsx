@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   View,
@@ -52,12 +53,20 @@ export default function SignupScreen() {
     ]);
   };
 
+  
+
+
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView 
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled" // <-- ADD THIS LINE
+        showsVerticalScrollIndicator={false}
+        >
         {/* HEADER */}
         <ThemedText type="title" style={styles.title}>
           Join FitConnect
@@ -102,17 +111,24 @@ export default function SignupScreen() {
         </View>
 
         {/* CTA BUTTON */}
+
+        {/* Replace your CTA button with this test setup */}
+
         <Pressable style={styles.button} onPress={handleSignup}>
           <ThemedText style={styles.buttonText}>
             Create Account
           </ThemedText>
         </Pressable>
 
+
+
+     
+
         {/* SIGN IN OPTION */}
         <View style={styles.bottomRow}>
           <ThemedText>Already have an account?</ThemedText>
 
-          <Pressable onPress={() => router.push("./signin")}>
+          <Pressable onPress={() => router.push("/signin")}>
             <ThemedText style={styles.link}>Sign In</ThemedText>
           </Pressable>
         </View>
@@ -130,6 +146,7 @@ const styles = StyleSheet.create({
   scroll: {
     padding: 24,
     justifyContent: "center",
+    flexGrow:1
   },
 
   title: {
