@@ -1,20 +1,38 @@
 import { create } from "zustand";
 
-type User = {
+export interface User {
   id: string;
-  displayName: string;
-};
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  goal?: string;
+  level?: string;
+}
 
-type AuthState = {
+interface AuthStore {
   user: User | null;
-  login: (u: User) => void;
+  setUser: (user: User | null) => void;
   logout: () => void;
-};
+  updateProfile: (updates: Partial<User>) => Promise<void>;
+}
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
-  login: (u: User) => set({ user: u }),
+  setUser: (user) => set({ user }),
   logout: () => set({ user: null }),
-}));
+  updateProfile: async (updates) => {
+    set((state) => {
+      const currentUser = state.user;
 
-export default useAuthStore;
+      return {
+        user: currentUser
+          ? { ...currentUser, ...updates }
+          : {
+              id: updates.id ?? "local-user",
+              email: updates.email ?? "guest@example.com",
+              ...updates,
+            },
+      };
+    });
+  },
+}));
