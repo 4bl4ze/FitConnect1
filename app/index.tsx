@@ -28,6 +28,12 @@ export default function SignupScreen() {
       return;
     }
 
+    const nameRegex = /^[a-zA-Z\s]+$/;
+  if (!nameRegex.test(fullName)) {
+  Alert.alert("Invalid Name", "Full name should contain letters only.");
+  return;
+}
+
     const emailRegex = /\S+@\S+\.\S+/;
 
     if (!emailRegex.test(email)) {
@@ -114,6 +120,13 @@ export default function SignupScreen() {
 
         {/* Replace your CTA button with this test setup */}
 
+        <Pressable 
+          onPress={() => router.push("./forgotPassword")} 
+          style={styles.forgotPasswordContainer}
+        >
+          <ThemedText style={styles.forgotPasswordText}>Forgot password?</ThemedText>
+        </Pressable>
+
         <Pressable style={styles.button} onPress={handleSignup}>
           <ThemedText style={styles.buttonText}>
             Create Account
@@ -187,6 +200,16 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
+  },
+
+  forgotPasswordContainer: {
+    alignSelf: "flex-end",
+    marginTop: 10,
+  },
+  forgotPasswordText: {
+    color: "#6B7280",
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
 
   bottomRow: {
