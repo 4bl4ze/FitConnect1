@@ -6,14 +6,17 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
+
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: "#007AFF",
         tabBarInactiveTintColor: Colors[colorScheme ?? "light"].icon,
         headerShown: false,
         tabBarButton: HapticTab,
@@ -39,8 +42,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Dashboard",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+          tabBarIcon: ({ focused }) => (
+            <IconSymbol size={28} name="house.fill" color={focused ? "#007AFF":Colors[colorScheme ?? "light"].icon} />
           ),
         }}
       />
