@@ -58,13 +58,20 @@ export default function Dashboard() {
         </ThemedView>
         <View style={styles.metricRow}>
           {metrics.map((metric) => (
-            <ThemedView
-              key={metric.label}
-              style={[styles.metricCard, { backgroundColor: metricBg }]}
-            >
-              <ThemedText type="defaultSemiBold">{metric.value}</ThemedText>
-              <ThemedText>{metric.label}</ThemedText>
-            </ThemedView>
+           <ThemedView
+  key={metric.label}
+  style={[styles.metricCard, { backgroundColor: metricBg }]}
+>
+  {/* Added style={styles.centerText} */}
+  <ThemedText type="defaultSemiBold" style={styles.centerText}>
+    {metric.value}
+  </ThemedText>
+  
+  {/* Added style={styles.metricLabel} */}
+  <ThemedText style={styles.metricLabel}>
+    {metric.label}
+  </ThemedText>
+</ThemedView>
           ))}
         </View>
       </ThemedView>
@@ -109,31 +116,45 @@ export default function Dashboard() {
 
       <ThemedView style={styles.section}>
         <ThemedText type="subtitle">Quick Actions</ThemedText>
-        <View style={styles.actionsRow}>
+
+        <View style={styles.actionsGrid}>
          <Pressable
   style={[styles.actionBtn, { backgroundColor: actionBg }]}
   onPress={() => router.push("/Workout")}
 >
-  <ThemedText type="defaultSemiBold">
+  <ThemedText type="defaultSemiBold" style={styles.centerText}>
     Start Workout
   </ThemedText>
 </Pressable>
+
   <Pressable
   style={[styles.actionBtn, { backgroundColor: actionBg }]}
   onPress={() => router.push("/AI")}
 >
-  <ThemedText type="defaultSemiBold">
+  <ThemedText type="defaultSemiBold" style={styles.centerText}>
     AI Trainer
   </ThemedText>
 </Pressable>
-          <Pressable
+
+  <Pressable
   style={[styles.actionBtn, { backgroundColor: actionBg }]}
   onPress={() => router.push("/bookTrainer")}
 >
-  <ThemedText type="defaultSemiBold">
+  <ThemedText type="defaultSemiBold" style={styles.centerText}>
     Book Trainer
   </ThemedText>
 </Pressable>
+
+
+ <Pressable
+  style={[styles.actionBtn, { backgroundColor: actionBg }]}
+  onPress={() => router.push("/friends")}
+>
+  <ThemedText type="defaultSemiBold" style={styles.centerText}>
+    Friend requests
+  </ThemedText>
+</Pressable>
+
         </View>
       </ThemedView>
     </ParallaxScrollView>
@@ -157,16 +178,28 @@ const styles = StyleSheet.create({
   metricRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 14,
+    gap: 10,
   },
   metricCard: {
     flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 6,
     padding: 20,
     borderRadius: 20,
     alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
   },
+  metricLabel: {
+  textAlign: "center",     
+  fontSize: 12,
+  marginTop: 4,
+  opacity: 0.8,
+},
+centerText: {
+  textAlign: "center",     
+},
   section: {
     gap: 14,
     marginBottom: 8,
@@ -188,19 +221,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
   },
-  actionsRow: {
-    flexDirection: "row",
-    gap: 14,
-    marginTop: 12,
-  },
+ actionsGrid: {
+  flexDirection: "row",
+  flexWrap: "wrap",          
+  gap: 12,             
+  marginTop: 6,
+},
+  
   actionBtn: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
-  },
+  width: "48%",              
+  flexGrow: 1,               
+  paddingVertical: 18,       
+  paddingHorizontal: 10,     
+  borderRadius: 16,
+  alignItems: "center",       
+  justifyContent: "center",  
+  borderWidth: 1,
+  borderColor: "rgba(0,0,0,0.05)",
+},
   headerImage: {
     position: "absolute",
     top: 24,
