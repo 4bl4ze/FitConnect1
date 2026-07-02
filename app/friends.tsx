@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { View, TextInput, Pressable, StyleSheet, FlatList } from "react-native";
 import { ThemedText } from "@/components/themed-text";
+import { router } from "expo-router";
+import { useState } from "react";
+import { FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
 
 const BLUE = "#2563EB";
 
@@ -30,18 +31,14 @@ export default function FriendsScreen() {
   // SEND FRIEND REQUEST
   const sendRequest = (id: string) => {
     setFriends((prev) =>
-      prev.map((f) =>
-        f.id === id ? { ...f, status: "pending" } : f
-      )
+      prev.map((f) => (f.id === id ? { ...f, status: "pending" } : f)),
     );
   };
 
   // ACCEPT REQUEST
   const acceptRequest = (id: string) => {
     setFriends((prev) =>
-      prev.map((f) =>
-        f.id === id ? { ...f, status: "accepted" } : f
-      )
+      prev.map((f) => (f.id === id ? { ...f, status: "accepted" } : f)),
     );
   };
 
@@ -70,7 +67,16 @@ export default function FriendsScreen() {
 
   return (
     <View style={styles.container}>
-      <ThemedText type="title">Friends</ThemedText>
+      <View style={styles.headerRow}>
+        <ThemedText type="title">Friends</ThemedText>
+
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.replace("/(tabs)")}
+        >
+          <ThemedText style={styles.backButtonText}>← Home</ThemedText>
+        </Pressable>
+      </View>
 
       {/* SEARCH USERS */}
       <TextInput
@@ -86,31 +92,23 @@ export default function FriendsScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <ThemedText type="defaultSemiBold">
-              {item.name}
-            </ThemedText>
+            <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
 
             {item.status === "none" && (
               <Pressable
                 style={styles.button}
                 onPress={() => sendRequest(item.id)}
               >
-                <ThemedText style={styles.buttonText}>
-                  Add Friend
-                </ThemedText>
+                <ThemedText style={styles.buttonText}>Add Friend</ThemedText>
               </Pressable>
             )}
 
             {item.status === "pending" && (
-              <ThemedText style={{ color: "orange" }}>
-                Request Sent
-              </ThemedText>
+              <ThemedText style={{ color: "orange" }}>Request Sent</ThemedText>
             )}
 
             {item.status === "accepted" && (
-              <ThemedText style={{ color: "green" }}>
-                Friends ✓
-              </ThemedText>
+              <ThemedText style={{ color: "green" }}>Friends ✓</ThemedText>
             )}
           </View>
         )}
@@ -139,9 +137,7 @@ export default function FriendsScreen() {
           />
 
           <Pressable style={styles.sendBtn} onPress={sendMessage}>
-            <ThemedText style={{ color: "#fff" }}>
-              Send
-            </ThemedText>
+            <ThemedText style={{ color: "#fff" }}>Send</ThemedText>
           </Pressable>
         </View>
       </View>
@@ -149,15 +145,30 @@ export default function FriendsScreen() {
   );
 }
 
-
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
     padding: 20,
     gap: 12,
+  },
+
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  backButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#EEF2FF",
+  },
+
+  backButtonText: {
+    color: BLUE,
+    fontWeight: "700",
   },
 
   input: {

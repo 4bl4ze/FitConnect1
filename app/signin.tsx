@@ -1,14 +1,14 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -57,14 +57,13 @@ export default function SignInScreen() {
         level: "Beginner",
       });
 
-      router.replace("/");
+      router.replace("/(tabs)");
     } catch (error) {
       Alert.alert("Sign in failed", "Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor }]}
@@ -133,7 +132,7 @@ export default function SignInScreen() {
                 displayName: "Guest",
                 level: "Beginner",
               });
-              router.replace("/");
+              router.replace("/(tabs)");
             }}
           >
             <ThemedText style={styles.secondaryText}>
