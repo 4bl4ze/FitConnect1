@@ -1,17 +1,18 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
+    Alert,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { useWorkoutStore } from "@/stores/useWorkoutStore";
 
 type Exercise = {
   id: string;
@@ -26,7 +27,36 @@ export default function StartWorkout() {
 
   const [exerciseName, setExerciseName] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const recordWorkout = useWorkoutStore((state) => state.recordWorkout);
 
+  const screenBg = useThemeColor(
+    { light: "#F8FAFC", dark: "#0F172A" },
+    "background",
+  );
+  const cardBg = useThemeColor(
+    { light: "#FFFFFF", dark: "#111827" },
+    "background",
+  );
+  const surfaceBg = useThemeColor(
+    { light: "#F8FAFC", dark: "#1F2937" },
+    "background",
+  );
+  const borderColor = useThemeColor(
+    { light: "#E5E7EB", dark: "#374151" },
+    "icon",
+  );
+  const textColor = useThemeColor(
+    { light: "#0F172A", dark: "#F9FAFB" },
+    "text",
+  );
+  const mutedTextColor = useThemeColor(
+    { light: "#64748B", dark: "#94A3B8" },
+    "icon",
+  );
+  const homeButtonBg = useThemeColor(
+    { light: "#EEF2FF", dark: "#1E293B" },
+    "background",
+  );
   const timerTextColor = useThemeColor(
     { light: "#0F172A", dark: "#F9FAFB" },
     "text",
@@ -87,6 +117,13 @@ export default function StartWorkout() {
   const finishWorkout = () => {
     setIsRunning(false);
 
+    recordWorkout({
+      title: exercises.length > 0 ? exercises[0].name : "Full body workout",
+      durationMinutes: Math.max(1, Math.round(seconds / 60)),
+      calories: Math.max(180, exercises.length * 80 + Math.round(seconds / 20)),
+      exercises: exercises.length,
+    });
+
     Alert.alert(
       "Workout Complete 🎉",
       `Time: ${formatTime(seconds)}\nExercises: ${exercises.length}`,
@@ -96,19 +133,28 @@ export default function StartWorkout() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: screenBg }]}>
       <View style={styles.headerRow}>
         <ThemedText type="title">Start Workout</ThemedText>
 
         <Pressable
-          style={styles.homeButton}
+          style={[
+            styles.homeButton,
+            { backgroundColor: homeButtonBg, borderColor },
+          ]}
           onPress={() => router.replace("/(tabs)")}
         >
-          <ThemedText style={styles.homeButtonText}>🏠 Home</ThemedText>
+          <ThemedText
+            style={[styles.homeButtonText, { color: timerBorderColor }]}
+          >
+            🏠 Home
+          </ThemedText>
         </Pressable>
       </View>
 
-      <View style={styles.timerCard}>
+      <View
+        style={[styles.timerCard, { backgroundColor: cardBg, borderColor }]}
+      >
         <ThemedText type="subtitle">Timer</ThemedText>
 
         <View
@@ -154,7 +200,11 @@ export default function StartWorkout() {
           value={exerciseName}
           onChangeText={setExerciseName}
           placeholder="Add exercise (e.g. Bench Press)"
-          style={styles.input}
+          placeholderTextColor={mutedTextColor}
+          style={[
+            styles.input,
+            { backgroundColor: surfaceBg, borderColor, color: textColor },
+          ]}
         />
 
         <Pressable style={styles.blueBtn} onPress={addExercise}>
@@ -167,7 +217,12 @@ export default function StartWorkout() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ gap: 12 }}
         renderItem={({ item }) => (
-          <View style={styles.exerciseCard}>
+          <View
+            style={[
+              styles.exerciseCard,
+              { backgroundColor: cardBg, borderColor },
+            ]}
+          >
             <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
 
             <View style={styles.row}>
@@ -210,7 +265,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     gap: 14,
-    backgroundColor: "#fff",
   },
 
   headerRow: {
@@ -221,12 +275,10 @@ const styles = StyleSheet.create({
   },
 
   homeButton: {
-    backgroundColor: "#EEF2FF",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: LIGHT,
   },
 
   homeButtonText: {
@@ -237,11 +289,9 @@ const styles = StyleSheet.create({
   timerCard: {
     padding: 18,
     borderRadius: 16,
-    backgroundColor: LIGHT,
     gap: 10,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: BLUE,
   },
 
   timerDisplay: {
@@ -273,7 +323,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: BLUE,
     padding: 10,
     borderRadius: 10,
   },
@@ -282,7 +331,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: LIGHT,
     gap: 6,
   },
 

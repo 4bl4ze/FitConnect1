@@ -1,12 +1,12 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  View,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -181,7 +181,7 @@ export default function ProfileScreen() {
             </View>
           </ThemedView>
         )}
-      </View>{" "}
+      </View>
       <TouchableOpacity
         style={[
           styles.logoutButton,

@@ -1,14 +1,14 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -38,9 +38,21 @@ export default function SignupScreen() {
     { light: "#6B7280", dark: "#D1D5DB" },
     "icon",
   );
+  const subtitleColor = useThemeColor(
+    { light: "#6B7280", dark: "#D1D5DB" },
+    "icon",
+  );
+  const toggleBg = useThemeColor(
+    { light: "#fff", dark: "#1F1F1F" },
+    "background",
+  );
   const toggleTextColor = useThemeColor(
     { light: "#2563EB", dark: "#60A5FA" },
     "tint",
+  );
+  const forgotTextColor = useThemeColor(
+    { light: "#6B7280", dark: "#9CA3AF" },
+    "icon",
   );
 
   const handleSignup = () => {
@@ -93,7 +105,7 @@ export default function SignupScreen() {
           Join FitConnect
         </ThemedText>
 
-        <ThemedText style={styles.subtitle}>
+        <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>
           Build strength. Track progress. Stay consistent.
         </ThemedText>
 
@@ -137,7 +149,10 @@ export default function SignupScreen() {
             />
 
             <Pressable
-              style={[styles.toggleButton, { borderColor }]}
+              style={[
+                styles.toggleButton,
+                { borderColor, backgroundColor: toggleBg },
+              ]}
               onPress={() => setShowPassword((value) => !value)}
             >
               <ThemedText
@@ -163,7 +178,10 @@ export default function SignupScreen() {
             />
 
             <Pressable
-              style={[styles.toggleButton, { borderColor }]}
+              style={[
+                styles.toggleButton,
+                { borderColor, backgroundColor: toggleBg },
+              ]}
               onPress={() => setShowConfirmPassword((value) => !value)}
             >
               <ThemedText
@@ -179,7 +197,9 @@ export default function SignupScreen() {
           onPress={() => router.push("./forgotPassword")}
           style={styles.forgotPasswordContainer}
         >
-          <ThemedText style={styles.forgotPasswordText}>
+          <ThemedText
+            style={[styles.forgotPasswordText, { color: forgotTextColor }]}
+          >
             Forgot password?
           </ThemedText>
         </Pressable>
@@ -222,7 +242,6 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: "center",
     marginBottom: 30,
-    color: "#555",
   },
 
   form: {
@@ -250,7 +269,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#fff",
   },
 
   toggleText: {
@@ -278,7 +296,6 @@ const styles = StyleSheet.create({
   },
 
   forgotPasswordText: {
-    color: "#6B7280",
     fontSize: 14,
     textDecorationLine: "underline",
   },

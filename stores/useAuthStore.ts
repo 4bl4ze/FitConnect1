@@ -11,6 +11,7 @@ export interface User {
 
 interface AuthStore {
   user: User | null;
+  loginCount: number;
   setUser: (user: User | null) => void;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
@@ -18,7 +19,21 @@ interface AuthStore {
 
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
-  setUser: (user) => set({ user }),
+  loginCount: 0,
+  setUser: (user) => {
+    set((state) => {
+      if (!user) {
+        return { user: null };
+      }
+
+      const shouldCountLogin = !state.user || state.user.id !== user.id;
+
+      return {
+        user,
+        loginCount: shouldCountLogin ? state.loginCount + 1 : state.loginCount,
+      };
+    });
+  },
   logout: () => set({ user: null }),
   updateProfile: async (updates) => {
     set((state) => {
