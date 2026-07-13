@@ -63,7 +63,9 @@ export default function Dashboard() {
     >
       <ThemedView style={styles.header}>
         <ThemedText type="title">FitConnect</ThemedText>
-        <ThemedText type="subtitle">Your all-in-one gym companion</ThemedText>
+        <ThemedText type="subtitle">
+          Your all-in-one gym and fitness companion
+        </ThemedText>
       </ThemedView>
       <ThemedView style={styles.dashboard}>
         {shouldShowWelcome && (

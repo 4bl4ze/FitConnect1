@@ -1,14 +1,15 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -83,12 +84,9 @@ export default function SignupScreen() {
       return;
     }
 
-    Alert.alert("Success", "Account created successfully!", [
-      {
-        text: "Continue",
-        onPress: () => router.replace("/(tabs)"),
-      },
-    ]);
+    // Navigate to verification step where we send a code to the user's email
+    // Use object form to avoid strict typed path issues in expo-router
+    router.push({ pathname: "/verify", params: { email } } as any);
   };
 
   return (
@@ -101,9 +99,15 @@ export default function SignupScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <ThemedText type="title" style={styles.title}>
-          Join FitConnect
-        </ThemedText>
+        <View style={styles.headerRow}>
+          <Image
+            source={require("../assets/images/icon.png")}
+            style={styles.logo}
+          />
+          <ThemedText type="title" style={styles.title}>
+            Join FitConnect
+          </ThemedText>
+        </View>
 
         <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>
           Build strength. Track progress. Stay consistent.
@@ -237,6 +241,20 @@ const styles = StyleSheet.create({
     color: BLUE,
     textAlign: "center",
     marginBottom: 8,
+  },
+
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+
+  logo: {
+    width: 64,
+    height: 64,
+    resizeMode: "contain",
   },
 
   subtitle: {

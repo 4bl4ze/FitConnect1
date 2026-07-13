@@ -1,15 +1,19 @@
 import { Tabs } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
+import { View } from "react-native";
 
 import { HapticTab } from "@/components/haptic-tab";
+import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const notificationCount = useAuthStore((state) => state.notificationCount);
 
   return (
     <>
@@ -67,7 +71,32 @@ export default function TabLayout() {
           options={{
             title: "Profile",
             tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="person.crop.circle" color={color} />
+              <View style={{ width: 28, height: 28 }}>
+                <IconSymbol size={28} name="person.crop.circle" color={color} />
+                {notificationCount > 0 ? (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: -4,
+                      right: -8,
+                      minWidth: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      backgroundColor: "#EF4444",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    <ThemedText
+                      type="caption"
+                      style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}
+                    >
+                      {notificationCount}
+                    </ThemedText>
+                  </View>
+                ) : null}
+              </View>
             ),
           }}
         />

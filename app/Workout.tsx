@@ -114,6 +114,21 @@ export default function StartWorkout() {
     setExercises((prev) => prev.filter((ex) => ex.id !== id));
   };
 
+  const confirmRemoveExercise = (id: string, name?: string) => {
+    Alert.alert(
+      "Remove Exercise",
+      `Remove \"${name ?? "this exercise"}\" from the workout?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => removeExercise(id),
+        },
+      ],
+    );
+  };
+
   const finishWorkout = () => {
     setIsRunning(false);
 
@@ -130,6 +145,25 @@ export default function StartWorkout() {
     );
 
     router.back();
+  };
+
+  const removeWorkout = () => {
+    Alert.alert(
+      "Delete Workout",
+      "Are you sure you want to delete this workout? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            setExercises([]);
+            setIsRunning(false);
+            setSeconds(0);
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -226,19 +260,53 @@ export default function StartWorkout() {
             <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
 
             <View style={styles.row}>
-              <Pressable
-                onPress={() => updateExercise(item.id, "sets", item.sets + 1)}
-              >
-                <ThemedText style={styles.blueText}>+ Set</ThemedText>
-              </Pressable>
+              <View style={styles.controlGroup}>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    updateExercise(item.id, "sets", Math.max(1, item.sets - 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>−</ThemedText>
+                </Pressable>
+
+                <ThemedText style={styles.controlValue}>{item.sets}</ThemedText>
+
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() => updateExercise(item.id, "sets", item.sets + 1)}
+                >
+                  <ThemedText style={styles.blueText}>+</ThemedText>
+                </Pressable>
+
+                <ThemedText style={{ marginLeft: 8 }}>sets</ThemedText>
+              </View>
+
+              <View style={styles.controlGroup}>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    updateExercise(item.id, "reps", Math.max(1, item.reps - 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>−</ThemedText>
+                </Pressable>
+
+                <ThemedText style={styles.controlValue}>{item.reps}</ThemedText>
+
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() => updateExercise(item.id, "reps", item.reps + 1)}
+                >
+                  <ThemedText style={styles.blueText}>+</ThemedText>
+                </Pressable>
+
+                <ThemedText style={{ marginLeft: 8 }}>reps</ThemedText>
+              </View>
 
               <Pressable
-                onPress={() => updateExercise(item.id, "reps", item.reps + 1)}
+                onPress={() => confirmRemoveExercise(item.id, item.name)}
               >
-                <ThemedText style={styles.blueText}>+ Rep</ThemedText>
-              </Pressable>
-
-              <Pressable onPress={() => removeExercise(item.id)}>
                 <ThemedText style={styles.redText}>Remove</ThemedText>
               </Pressable>
             </View>
@@ -252,6 +320,10 @@ export default function StartWorkout() {
 
       <Pressable style={styles.blueBtn} onPress={finishWorkout}>
         <ThemedText style={styles.whiteText}>Finish Workout</ThemedText>
+      </Pressable>
+
+      <Pressable style={styles.removeWorkoutBtn} onPress={removeWorkout}>
+        <ThemedText style={styles.whiteText}>Delete Workout</ThemedText>
       </Pressable>
     </ThemedView>
   );
@@ -340,6 +412,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  controlGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginRight: 8,
+  },
+
+  controlBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: BLUE,
+    backgroundColor: LIGHT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  controlValue: {
+    minWidth: 28,
+    textAlign: "center",
+    fontWeight: "700",
+  },
+
   blueBtn: {
     padding: 12,
     borderRadius: 10,
@@ -364,6 +460,14 @@ const styles = StyleSheet.create({
   whiteText: {
     color: "#fff",
     fontWeight: "600",
+  },
+
+  removeWorkoutBtn: {
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#B91C1C",
+    alignItems: "center",
+    marginTop: 8,
   },
 
   blueText: {
