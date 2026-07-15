@@ -8,6 +8,7 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
+
 const metrics = [
   { label: "Total workouts", value: "18" },
   { label: "Calories burned", value: "5.2k" },
@@ -32,6 +33,8 @@ export default function Dashboard() {
     "background",
   );
   const borderColor = useThemeColor({ light: "#E5E7EB", dark: "#444" }, "icon");
+
+   
 
   return (
     <ParallaxScrollView
