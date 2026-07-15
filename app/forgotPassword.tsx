@@ -1,22 +1,49 @@
+import { ThemedText } from "@/components/themed-text";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
-  View,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    View,
 } from "react-native";
-import { router } from "expo-router";
-import { ThemedText } from "@/components/themed-text";
 
 const BLUE = "#2563EB";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const backgroundColor = useThemeColor({}, "background");
+  const inputBg = useThemeColor(
+    { light: "#FAFAFA", dark: "#1F1F1F" },
+    "background",
+  );
+  const borderColor = useThemeColor(
+    { light: "#E5E7EB", dark: "#4B5563" },
+    "icon",
+  );
+  const textColor = useThemeColor({}, "text");
+  const placeholderColor = useThemeColor(
+    { light: "#6B7280", dark: "#D1D5DB" },
+    "icon",
+  );
+  const subtitleColor = useThemeColor(
+    { light: "#6B7280", dark: "#D1D5DB" },
+    "icon",
+  );
+  const linkColor = useThemeColor(
+    { light: "#2563EB", dark: "#60A5FA" },
+    "tint",
+  );
+  const disabledButtonColor = useThemeColor(
+    { light: "#93C5FD", dark: "#1D4ED8" },
+    "tint",
+  );
 
   const handleResetRequest = async () => {
     // 1. Basic validation
@@ -35,7 +62,7 @@ export default function ForgotPasswordScreen() {
       setIsLoading(true);
 
       // 2. Mock API Call (Replace this with your actual backend/Firebase/Supabase auth call)
-      // await auth.sendPasswordResetEmail(email); 
+      // await auth.sendPasswordResetEmail(email);
       await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulating network latency
 
       // 3. Success Feedback
@@ -47,7 +74,7 @@ export default function ForgotPasswordScreen() {
             text: "Back to Sign In",
             onPress: () => router.replace("./signin"),
           },
-        ]
+        ],
       );
     } catch (error) {
       Alert.alert("Error", "Something went wrong. Please try again later.");
@@ -58,11 +85,11 @@ export default function ForgotPasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView 
-        contentContainerStyle={styles.scroll}
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { backgroundColor }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -71,17 +98,22 @@ export default function ForgotPasswordScreen() {
           Reset Password
         </ThemedText>
 
-        <ThemedText style={styles.subtitle}>
-          Enter your FitConnect email and we will send you a link to get back into your account.
+        <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>
+          Enter your FitConnect email and we will send you a link to get back
+          into your account.
         </ThemedText>
 
         {/* FORM */}
         <View style={styles.form}>
           <TextInput
             placeholder="Email address"
+            placeholderTextColor={placeholderColor}
             value={email}
             onChangeText={setEmail}
-            style={styles.input}
+            style={[
+              styles.input,
+              { backgroundColor: inputBg, borderColor, color: textColor },
+            ]}
             keyboardType="email-address"
             autoCapitalize="none"
             editable={!isLoading}
@@ -89,8 +121,11 @@ export default function ForgotPasswordScreen() {
         </View>
 
         {/* CTA BUTTON */}
-        <Pressable 
-          style={[styles.button, isLoading && styles.buttonDisabled]} 
+        <Pressable
+          style={[
+            styles.button,
+            isLoading && { backgroundColor: disabledButtonColor },
+          ]}
           onPress={handleResetRequest}
           disabled={isLoading}
         >
@@ -101,7 +136,9 @@ export default function ForgotPasswordScreen() {
 
         {/* BACK TO LOGIN */}
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <ThemedText style={styles.link}>Back to Sign Up</ThemedText>
+          <ThemedText style={[styles.link, { color: linkColor }]}>
+            Back to Sign Up
+          </ThemedText>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -111,7 +148,6 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   scroll: {
     padding: 24,
@@ -128,7 +164,6 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: "center",
     marginBottom: 30,
-    color: "#555",
     lineHeight: 20,
   },
   form: {
@@ -136,10 +171,8 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     padding: 14,
     borderRadius: 10,
-    backgroundColor: "#FAFAFA",
   },
   button: {
     backgroundColor: BLUE,
@@ -149,7 +182,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonDisabled: {
-    backgroundColor: "#93C5FD",
+    opacity: 0.8,
   },
   buttonText: {
     color: "#fff",
@@ -161,7 +194,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   link: {
-    color: BLUE,
     fontWeight: "700",
   },
 });

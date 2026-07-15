@@ -1,22 +1,24 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  View,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    TouchableOpacity,
+    View
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, notificationCount, clearNotifications } =
+    useAuthStore();
   const [showSettings, setShowSettings] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(true);
 
@@ -67,7 +69,25 @@ export default function ProfileScreen() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      <ThemedText type="title">Profile</ThemedText>
+      <View style={styles.profileHeader}>
+        <ThemedText type="title">Profile</ThemedText>
+        <TouchableOpacity
+          style={[
+            styles.notificationButton,
+            { backgroundColor: buttonBg, borderColor: buttonBorderColor },
+          ]}
+          onPress={() => router.push("/notifications")}
+        >
+          <IconSymbol size={24} name="bell.fill" color={buttonTextColor} />
+          {notificationCount > 0 ? (
+            <View style={styles.notificationBadge}>
+              <ThemedText type="caption" style={styles.notificationBadgeText}>
+                {notificationCount}
+              </ThemedText>
+            </View>
+          ) : null}
+        </TouchableOpacity>
+      </View>
       <ThemedView style={[styles.profileCard, { backgroundColor: cardBg }]}>
         <View style={styles.profileImageContainer}>
           <Image source={{ uri: profileImage }} style={styles.profileImage} />
@@ -145,8 +165,17 @@ export default function ProfileScreen() {
               <Switch
                 value={pushEnabled}
                 onValueChange={setPushEnabled}
-                trackColor={{ false: "#D1D5DB", true: "#2563EB" }}
-                thumbColor={pushEnabled ? "#FFFFFF" : "#F3F4F6"}
+                trackColor={{
+                  false: themeMode === "dark" ? "#4B5563" : "#D1D5DB",
+                  true: "#2563EB",
+                }}
+                thumbColor={
+                  pushEnabled
+                    ? "#FFFFFF"
+                    : themeMode === "dark"
+                      ? "#9CA3AF"
+                      : "#6B7280"
+                }
               />
             </View>
 
@@ -181,7 +210,7 @@ export default function ProfileScreen() {
             </View>
           </ThemedView>
         )}
-      </View>{" "}
+      </View>
       <TouchableOpacity
         style={[
           styles.logoutButton,
@@ -265,6 +294,37 @@ const styles = StyleSheet.create({
     gap: 14,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
+  },
+  profileHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  notificationButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#EF4444",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
   },
   settingRow: {
     flexDirection: "row",

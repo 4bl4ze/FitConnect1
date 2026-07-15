@@ -1,17 +1,18 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
+    Alert,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { useWorkoutStore } from "@/stores/useWorkoutStore";
 
 type Exercise = {
   id: string;
@@ -26,7 +27,36 @@ export default function StartWorkout() {
 
   const [exerciseName, setExerciseName] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const recordWorkout = useWorkoutStore((state) => state.recordWorkout);
 
+  const screenBg = useThemeColor(
+    { light: "#F8FAFC", dark: "#0F172A" },
+    "background",
+  );
+  const cardBg = useThemeColor(
+    { light: "#FFFFFF", dark: "#111827" },
+    "background",
+  );
+  const surfaceBg = useThemeColor(
+    { light: "#F8FAFC", dark: "#1F2937" },
+    "background",
+  );
+  const borderColor = useThemeColor(
+    { light: "#E5E7EB", dark: "#374151" },
+    "icon",
+  );
+  const textColor = useThemeColor(
+    { light: "#0F172A", dark: "#F9FAFB" },
+    "text",
+  );
+  const mutedTextColor = useThemeColor(
+    { light: "#64748B", dark: "#94A3B8" },
+    "icon",
+  );
+  const homeButtonBg = useThemeColor(
+    { light: "#EEF2FF", dark: "#1E293B" },
+    "background",
+  );
   const timerTextColor = useThemeColor(
     { light: "#0F172A", dark: "#F9FAFB" },
     "text",
@@ -84,8 +114,30 @@ export default function StartWorkout() {
     setExercises((prev) => prev.filter((ex) => ex.id !== id));
   };
 
+  const confirmRemoveExercise = (id: string, name?: string) => {
+    Alert.alert(
+      "Remove Exercise",
+      `Remove \"${name ?? "this exercise"}\" from the workout?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => removeExercise(id),
+        },
+      ],
+    );
+  };
+
   const finishWorkout = () => {
     setIsRunning(false);
+
+    recordWorkout({
+      title: exercises.length > 0 ? exercises[0].name : "Full body workout",
+      durationMinutes: Math.max(1, Math.round(seconds / 60)),
+      calories: Math.max(180, exercises.length * 80 + Math.round(seconds / 20)),
+      exercises: exercises.length,
+    });
 
     Alert.alert(
       "Workout Complete 🎉",
@@ -95,20 +147,48 @@ export default function StartWorkout() {
     router.back();
   };
 
+  const removeWorkout = () => {
+    Alert.alert(
+      "Delete Workout",
+      "Are you sure you want to delete this workout? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            setExercises([]);
+            setIsRunning(false);
+            setSeconds(0);
+          },
+        },
+      ],
+    );
+  };
+
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: screenBg }]}>
       <View style={styles.headerRow}>
         <ThemedText type="title">Start Workout</ThemedText>
 
         <Pressable
-          style={styles.homeButton}
+          style={[
+            styles.homeButton,
+            { backgroundColor: homeButtonBg, borderColor },
+          ]}
           onPress={() => router.replace("/(tabs)")}
         >
-          <ThemedText style={styles.homeButtonText}>🏠 Home</ThemedText>
+          <ThemedText
+            style={[styles.homeButtonText, { color: timerBorderColor }]}
+          >
+            🏠 Home
+          </ThemedText>
         </Pressable>
       </View>
 
-      <View style={styles.timerCard}>
+      <View
+        style={[styles.timerCard, { backgroundColor: cardBg, borderColor }]}
+      >
         <ThemedText type="subtitle">Timer</ThemedText>
 
         <View
@@ -154,7 +234,11 @@ export default function StartWorkout() {
           value={exerciseName}
           onChangeText={setExerciseName}
           placeholder="Add exercise (e.g. Bench Press)"
-          style={styles.input}
+          placeholderTextColor={mutedTextColor}
+          style={[
+            styles.input,
+            { backgroundColor: surfaceBg, borderColor, color: textColor },
+          ]}
         />
 
         <Pressable style={styles.blueBtn} onPress={addExercise}>
@@ -167,23 +251,62 @@ export default function StartWorkout() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ gap: 12 }}
         renderItem={({ item }) => (
-          <View style={styles.exerciseCard}>
+          <View
+            style={[
+              styles.exerciseCard,
+              { backgroundColor: cardBg, borderColor },
+            ]}
+          >
             <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
 
             <View style={styles.row}>
-              <Pressable
-                onPress={() => updateExercise(item.id, "sets", item.sets + 1)}
-              >
-                <ThemedText style={styles.blueText}>+ Set</ThemedText>
-              </Pressable>
+              <View style={styles.controlGroup}>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    updateExercise(item.id, "sets", Math.max(1, item.sets - 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>−</ThemedText>
+                </Pressable>
+
+                <ThemedText style={styles.controlValue}>{item.sets}</ThemedText>
+
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() => updateExercise(item.id, "sets", item.sets + 1)}
+                >
+                  <ThemedText style={styles.blueText}>+</ThemedText>
+                </Pressable>
+
+                <ThemedText style={{ marginLeft: 8 }}>sets</ThemedText>
+              </View>
+
+              <View style={styles.controlGroup}>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    updateExercise(item.id, "reps", Math.max(1, item.reps - 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>−</ThemedText>
+                </Pressable>
+
+                <ThemedText style={styles.controlValue}>{item.reps}</ThemedText>
+
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() => updateExercise(item.id, "reps", item.reps + 1)}
+                >
+                  <ThemedText style={styles.blueText}>+</ThemedText>
+                </Pressable>
+
+                <ThemedText style={{ marginLeft: 8 }}>reps</ThemedText>
+              </View>
 
               <Pressable
-                onPress={() => updateExercise(item.id, "reps", item.reps + 1)}
+                onPress={() => confirmRemoveExercise(item.id, item.name)}
               >
-                <ThemedText style={styles.blueText}>+ Rep</ThemedText>
-              </Pressable>
-
-              <Pressable onPress={() => removeExercise(item.id)}>
                 <ThemedText style={styles.redText}>Remove</ThemedText>
               </Pressable>
             </View>
@@ -198,6 +321,10 @@ export default function StartWorkout() {
       <Pressable style={styles.blueBtn} onPress={finishWorkout}>
         <ThemedText style={styles.whiteText}>Finish Workout</ThemedText>
       </Pressable>
+
+      <Pressable style={styles.removeWorkoutBtn} onPress={removeWorkout}>
+        <ThemedText style={styles.whiteText}>Delete Workout</ThemedText>
+      </Pressable>
     </ThemedView>
   );
 }
@@ -210,7 +337,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     gap: 14,
-    backgroundColor: "#fff",
   },
 
   headerRow: {
@@ -221,12 +347,10 @@ const styles = StyleSheet.create({
   },
 
   homeButton: {
-    backgroundColor: "#EEF2FF",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: LIGHT,
   },
 
   homeButtonText: {
@@ -237,11 +361,9 @@ const styles = StyleSheet.create({
   timerCard: {
     padding: 18,
     borderRadius: 16,
-    backgroundColor: LIGHT,
     gap: 10,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: BLUE,
   },
 
   timerDisplay: {
@@ -273,7 +395,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: BLUE,
     padding: 10,
     borderRadius: 10,
   },
@@ -282,7 +403,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: LIGHT,
     gap: 6,
   },
 
@@ -290,6 +410,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 16,
     alignItems: "center",
+  },
+
+  controlGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginRight: 8,
+  },
+
+  controlBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: BLUE,
+    backgroundColor: LIGHT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  controlValue: {
+    minWidth: 28,
+    textAlign: "center",
+    fontWeight: "700",
   },
 
   blueBtn: {
@@ -316,6 +460,14 @@ const styles = StyleSheet.create({
   whiteText: {
     color: "#fff",
     fontWeight: "600",
+  },
+
+  removeWorkoutBtn: {
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#B91C1C",
+    alignItems: "center",
+    marginTop: 8,
   },
 
   blueText: {

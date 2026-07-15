@@ -1,4 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import { router } from "expo-router";
 import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
@@ -27,6 +29,35 @@ export default function FriendsScreen() {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState("");
+
+  const screenBg = useThemeColor(
+    { light: "#F8FAFC", dark: "#0F172A" },
+    "background",
+  );
+  const cardBg = useThemeColor(
+    { light: "#F9FAFB", dark: "#111827" },
+    "background",
+  );
+  const inputBg = useThemeColor(
+    { light: "#FFFFFF", dark: "#1F2937" },
+    "background",
+  );
+  const borderColor = useThemeColor(
+    { light: "#E5E7EB", dark: "#374151" },
+    "icon",
+  );
+  const textColor = useThemeColor(
+    { light: "#0F172A", dark: "#F9FAFB" },
+    "text",
+  );
+  const mutedTextColor = useThemeColor(
+    { light: "#64748B", dark: "#94A3B8" },
+    "icon",
+  );
+  const messageBg = useThemeColor(
+    { light: "#EEF2FF", dark: "#1E293B" },
+    "background",
+  );
 
   // SEND FRIEND REQUEST
   const sendRequest = (id: string) => {
@@ -66,7 +97,7 @@ export default function FriendsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: screenBg }]}>
       <View style={styles.headerRow}>
         <ThemedText type="title">Friends</ThemedText>
 
@@ -81,9 +112,13 @@ export default function FriendsScreen() {
       {/* SEARCH USERS */}
       <TextInput
         placeholder="Search users..."
+        placeholderTextColor={mutedTextColor}
         value={search}
         onChangeText={setSearch}
-        style={styles.input}
+        style={[
+          styles.input,
+          { backgroundColor: inputBg, borderColor, color: textColor },
+        ]}
       />
 
       {/* FRIEND LIST */}
@@ -91,7 +126,7 @@ export default function FriendsScreen() {
         data={friends}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
             <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
 
             {item.status === "none" && (
@@ -115,14 +150,14 @@ export default function FriendsScreen() {
       />
 
       {/* CHAT SECTION (ONLY FOR ACCEPTED FRIENDS) */}
-      <View style={styles.chatBox}>
+      <View style={[styles.chatBox, { borderColor }]}>
         <ThemedText type="subtitle">Chat</ThemedText>
 
         <FlatList
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.message}>
+            <View style={[styles.message, { backgroundColor: messageBg }]}>
               <ThemedText>{item.text}</ThemedText>
             </View>
           )}
@@ -131,9 +166,13 @@ export default function FriendsScreen() {
         <View style={styles.chatInputRow}>
           <TextInput
             placeholder="Type message..."
+            placeholderTextColor={mutedTextColor}
             value={messageText}
             onChangeText={setMessageText}
-            style={styles.chatInput}
+            style={[
+              styles.chatInput,
+              { backgroundColor: inputBg, borderColor, color: textColor },
+            ]}
           />
 
           <Pressable style={styles.sendBtn} onPress={sendMessage}>
@@ -141,14 +180,13 @@ export default function FriendsScreen() {
           </Pressable>
         </View>
       </View>
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
     padding: 20,
     gap: 12,
   },
@@ -173,7 +211,6 @@ const styles = StyleSheet.create({
 
   input: {
     borderWidth: 1,
-    borderColor: BLUE,
     padding: 12,
     borderRadius: 10,
   },
@@ -182,9 +219,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     marginBottom: 10,
-    backgroundColor: "#F9FAFB",
   },
 
   button: {
@@ -203,7 +238,6 @@ const styles = StyleSheet.create({
   chatBox: {
     marginTop: 20,
     borderTopWidth: 1,
-    borderColor: "#E5E7EB",
     paddingTop: 15,
     flex: 1,
   },
@@ -217,7 +251,6 @@ const styles = StyleSheet.create({
   chatInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: BLUE,
     padding: 10,
     borderRadius: 10,
   },
@@ -231,7 +264,6 @@ const styles = StyleSheet.create({
 
   message: {
     padding: 10,
-    backgroundColor: "#EEF2FF",
     marginVertical: 5,
     borderRadius: 8,
   },

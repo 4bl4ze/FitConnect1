@@ -1,25 +1,26 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  TextInput,
-  View,
+    Alert,
+    FlatList,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
-type AttachmentKind = "image" | "document";
+type AttachmentKind = "image" | "video" | "document";
 
 type Attachment = {
   kind: AttachmentKind;
@@ -35,6 +36,8 @@ type Message = {
   attachment?: Attachment;
 };
 
+const STORAGE_KEY = "@fitconnect_ai_messages";
+
 export default function AITrainer() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
@@ -44,6 +47,41 @@ export default function AITrainer() {
       text: "Hi 👋 I’m FITCONNECT AI. Ask me for a workout plan!",
     },
   ]);
+  const [messagesLoaded, setMessagesLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved) as Message[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to load AI chat history", error);
+      } finally {
+        setMessagesLoaded(true);
+      }
+    };
+
+    loadHistory();
+  }, []);
+
+  useEffect(() => {
+    const saveHistory = async () => {
+      if (!messagesLoaded) return;
+
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      } catch (error) {
+        console.warn("Failed to save AI chat history", error);
+      }
+    };
+
+    saveHistory();
+  }, [messages, messagesLoaded]);
 
   const screenBg = useThemeColor(
     { light: "#F8FAFC", dark: "#0F172A" },
@@ -247,7 +285,9 @@ export default function AITrainer() {
     const aiReply =
       attachment.kind === "image"
         ? "I received your image. In a full AI integration, I would analyze it here."
-        : "I received your document. In a full AI integration, I would read and summarize it here.";
+        : attachment.kind === "video"
+          ? "I received your video. In a full AI integration, I would analyze it here."
+          : "I received your document. In a full AI integration, I would read and summarize it here.";
 
     setTimeout(() => {
       setMessages((prev) => [
@@ -286,6 +326,56 @@ export default function AITrainer() {
     });
   };
 
+  const takePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission needed", "Please allow camera access.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.85,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    const asset = result.assets[0];
+
+    addAttachmentMessage({
+      kind: "image",
+      uri: asset.uri,
+      name: asset.fileName ?? "photo",
+      mimeType: asset.type ?? "image/jpeg",
+    });
+  };
+
+  const recordVideo = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission needed", "Please allow camera access.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: false,
+      quality: 0.7,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    const asset = result.assets[0];
+
+    addAttachmentMessage({
+      kind: "video",
+      uri: asset.uri,
+      name: asset.fileName ?? "video",
+      mimeType: asset.type ?? "video/mp4",
+    });
+  };
+
   const pickDocument = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: [
@@ -299,20 +389,25 @@ export default function AITrainer() {
       multiple: false,
     });
 
-    if (result.type === "cancel") return;
+    // Only proceed if the picker returned a successful selection with a URI.
+    // Different platforms/versions may use different shapes; guard defensively.
+    const resultType = (result as any).type;
+    if (resultType !== "success" || !result.uri) return;
 
     addAttachmentMessage({
       kind: "document",
       uri: result.uri,
       name: result.name ?? "document",
-      mimeType: result.mimeType ?? undefined,
+      mimeType: (result as any).mimeType ?? undefined,
     });
   };
 
   const uploadAttachment = () => {
     Alert.alert("Upload", "Choose what to attach", [
-      { text: "Image", onPress: pickImage },
-      { text: "Document", onPress: pickDocument },
+      { text: "Take Photo", onPress: takePhoto },
+      { text: "Record Video", onPress: recordVideo },
+      { text: "Choose Image", onPress: pickImage },
+      { text: "Choose Document", onPress: pickDocument },
       { text: "Cancel", style: "cancel" },
     ]);
   };
@@ -394,6 +489,12 @@ export default function AITrainer() {
                     source={{ uri: item.attachment.uri }}
                     style={styles.attachmentImage}
                   />
+                ) : null}
+
+                {item.attachment?.kind === "video" ? (
+                  <ThemedText style={styles.attachmentMeta}>
+                    🎥 {item.attachment.name ?? "Video attached"}
+                  </ThemedText>
                 ) : null}
 
                 {item.attachment?.kind === "document" ? (

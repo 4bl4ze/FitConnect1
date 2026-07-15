@@ -2,15 +2,15 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -82,7 +82,7 @@ export default function EditProfileScreen() {
       });
 
       Alert.alert("Success", "Profile updated!");
-      router.back();
+      router.replace("/(tabs)/profile");
     } catch (error) {
       Alert.alert("Error", "Failed to update profile. Please try again.");
       console.warn(error);
@@ -222,7 +222,7 @@ export default function EditProfileScreen() {
             styles.cancelButton,
             { borderColor: inputBorderColor, backgroundColor: inputBg },
           ]}
-          onPress={() => router.back()}
+          onPress={() => router.replace("/(tabs)/profile")}
           disabled={loading}
         >
           <ThemedText style={[styles.cancelButtonText, { color: textColor }]}>
