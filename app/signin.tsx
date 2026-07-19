@@ -1,164 +1,195 @@
+import { router } from "expo-router";
 import { useState } from "react";
 import {
-  View,
-  TextInput,
-  Pressable,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { router } from "expo-router";
-import { ThemedText } from "@/components/themed-text";
 
-const BLUE = "#2563EB";
+import { ThemedText } from "@/components/themed-text";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function SignInScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSignIn = () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please fill all fields");
+  const setUser = useAuthStore((state) => state.setUser);
+
+  const backgroundColor = useThemeColor({}, "background");
+  const cardBg = useThemeColor(
+    { light: "#F3F4F6", dark: "#2C2C2C" },
+    "background",
+  );
+  const inputBg = useThemeColor(
+    { light: "#FFFFFF", dark: "#1F1F1F" },
+    "background",
+  );
+  const borderColor = useThemeColor(
+    { light: "#D1D5DB", dark: "#4B5563" },
+    "icon",
+  );
+  const textColor = useThemeColor({}, "text");
+  const placeholderColor = useThemeColor(
+    { light: "#6B7280", dark: "#D1D5DB" },
+    "icon",
+  );
+  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#3B82F6" }, "tint");
+
+  const handleSignIn = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Sign in error", "Please enter both email and password.");
       return;
     }
 
-    const emailRegex = /\S+@\S+\.\S+/;
+    setLoading(true);
+    try {
+      setUser({
+        id: email.trim().toLowerCase(),
+        email: email.trim(),
+        displayName: email.trim().split("@")[0],
+        level: "Beginner",
+      });
 
-    if (!emailRegex.test(email)) {
-      Alert.alert("Invalid Email", "Please enter a valid email");
-      return;
+      router.replace("/(tabs)");
+    } catch (error) {
+      Alert.alert("Sign in failed", "Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    // 🔥 TEMP AUTH (replace later with Firebase/Supabase)
-    Alert.alert("Success", "Signed in successfully!", [
-      {
-        text: "Continue",
-        onPress: () => router.replace("/(tabs)"),
-      },
-    ]);
   };
-
   return (
     <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={[styles.container, { backgroundColor }]}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={90}
     >
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* HEADER */}
-        <ThemedText type="title" style={styles.title}>
-          Welcome Back
-        </ThemedText>
+      <ScrollView
+        contentContainerStyle={[styles.content, { backgroundColor }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+          <ThemedText type="title">Sign In</ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Enter your credentials to continue.
+          </ThemedText>
 
-        <ThemedText style={styles.subtitle}>
-          Sign in to continue your fitness journey
-        </ThemedText>
-
-        {/* FORM */}
-        <View style={styles.form}>
           <TextInput
-            placeholder="Email address"
+            style={[
+              styles.input,
+              { backgroundColor: inputBg, borderColor, color: textColor },
+            ]}
+            placeholder="Email"
+            placeholderTextColor={placeholderColor}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
             value={email}
             onChangeText={setEmail}
-            style={styles.input}
-            keyboardType="email-address"
+            returnKeyType="next"
           />
 
           <TextInput
+            style={[
+              styles.input,
+              { backgroundColor: inputBg, borderColor, color: textColor },
+            ]}
             placeholder="Password"
+            placeholderTextColor={placeholderColor}
+            secureTextEntry
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
+            returnKeyType="done"
+            onSubmitEditing={handleSignIn}
           />
-        </View>
 
-        {/* BUTTON */}
-        <Pressable style={styles.button} onPress={handleSignIn}>
-          <ThemedText style={styles.buttonText}>
-            Sign In
-          </ThemedText>
-        </Pressable>
-
-        {/* SIGN UP LINK */}
-        <View style={styles.bottomRow}>
-          <ThemedText>Don’t have an account?</ThemedText>
-
-          <Pressable onPress={() => router.replace("/")}>
-            <ThemedText style={styles.link}>
-              Sign Up
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: buttonBg, opacity: loading ? 0.7 : 1 },
+            ]}
+            onPress={handleSignIn}
+            disabled={loading}
+          >
+            <ThemedText style={styles.buttonText}>
+              {loading ? "Signing in..." : "Sign In"}
             </ThemedText>
-          </Pressable>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => {
+              setUser({
+                id: "guest",
+                email: "guest@example.com",
+                displayName: "Guest",
+                level: "Beginner",
+              });
+              router.replace("/(tabs)");
+            }}
+          >
+            <ThemedText style={styles.secondaryText}>
+              Continue as guest
+            </ThemedText>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
-
-  scroll: {
+  content: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 24,
+    padding: 20,
   },
-
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: BLUE,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-
-  subtitle: {
-    textAlign: "center",
-    marginBottom: 30,
-    color: "#555",
-  },
-
-  form: {
-    gap: 12,
-  },
-
-  input: {
+  card: {
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: "#FAFAFA",
+    padding: 24,
+    gap: 16,
   },
-
-  button: {
-    backgroundColor: BLUE,
-    padding: 16,
-    borderRadius: 10,
-    marginTop: 20,
-    alignItems: "center",
+  subtitle: {
+    fontSize: 15,
+    marginTop: 4,
+    marginBottom: 16,
   },
-
-  buttonText: {
-    color: "#fff",
-    fontWeight: "700",
+  input: {
+    height: 52,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 16,
     fontSize: 16,
   },
-
-  bottomRow: {
-    flexDirection: "row",
+  button: {
+    height: 52,
+    borderRadius: 14,
+    alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
-    gap: 6,
+    marginTop: 8,
   },
-
-  link: {
-    color: BLUE,
-    fontWeight: "700",
+  buttonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  secondaryButton: {
+    alignItems: "center",
+    marginTop: 12,
+  },
+  secondaryText: {
+    color: "#2563EB",
+    fontWeight: "600",
   },
 });

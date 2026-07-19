@@ -1,18 +1,19 @@
-
+import { router } from "expo-router";
 import { useState } from "react";
 import {
-  View,
-  TextInput,
-  Pressable,
-  StyleSheet,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
 } from "react-native";
-import { router } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
+import { useThemeColor } from "@/hooks/use-theme-color";
 
 const BLUE = "#2563EB";
 
@@ -21,6 +22,39 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const backgroundColor = useThemeColor({}, "background");
+  const inputBg = useThemeColor(
+    { light: "#FAFAFA", dark: "#1F1F1F" },
+    "background",
+  );
+  const borderColor = useThemeColor(
+    { light: "#E5E7EB", dark: "#4B5563" },
+    "icon",
+  );
+  const textColor = useThemeColor({}, "text");
+  const placeholderColor = useThemeColor(
+    { light: "#6B7280", dark: "#D1D5DB" },
+    "icon",
+  );
+  const subtitleColor = useThemeColor(
+    { light: "#6B7280", dark: "#D1D5DB" },
+    "icon",
+  );
+  const toggleBg = useThemeColor(
+    { light: "#fff", dark: "#1F1F1F" },
+    "background",
+  );
+  const toggleTextColor = useThemeColor(
+    { light: "#2563EB", dark: "#60A5FA" },
+    "tint",
+  );
+  const forgotTextColor = useThemeColor(
+    { light: "#6B7280", dark: "#9CA3AF" },
+    "icon",
+  );
 
   const handleSignup = () => {
     if (!fullName || !email || !password || !confirmPassword) {
@@ -28,8 +62,13 @@ export default function SignupScreen() {
       return;
     }
 
-    const emailRegex = /\S+@\S+\.\S+/;
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(fullName)) {
+      Alert.alert("Invalid Name", "Full name should contain letters only.");
+      return;
+    }
 
+    const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
       Alert.alert("Invalid Email", "Enter a valid email address.");
       return;
@@ -45,90 +84,138 @@ export default function SignupScreen() {
       return;
     }
 
-    Alert.alert("Success", "Account created successfully!", [
-      {
-        text: "Continue",
-        onPress: () => router.replace("/(tabs)"),
-      },
-    ]);
+    // Navigate to verification step where we send a code to the user's email
+    // Use object form to avoid strict typed path issues in expo-router
+    router.push({ pathname: "/verify", params: { email } } as any);
   };
-
-  
-
-
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView 
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled" // <-- ADD THIS LINE
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { backgroundColor }]}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        >
-        {/* HEADER */}
-        <ThemedText type="title" style={styles.title}>
-          Join FitConnect
-        </ThemedText>
+      >
+        <View style={styles.headerRow}>
+          <Image
+            source={require("../assets/images/icon.png")}
+            style={styles.logo}
+          />
+          <ThemedText type="title" style={styles.title}>
+            Join FitConnect
+          </ThemedText>
+        </View>
 
-        <ThemedText style={styles.subtitle}>
+        <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>
           Build strength. Track progress. Stay consistent.
         </ThemedText>
 
-        {/* FORM */}
         <View style={styles.form}>
           <TextInput
             placeholder="Full Name"
+            placeholderTextColor={placeholderColor}
             value={fullName}
             onChangeText={setFullName}
-            style={styles.input}
+            style={[
+              styles.input,
+              { backgroundColor: inputBg, borderColor, color: textColor },
+            ]}
           />
 
           <TextInput
             placeholder="Email address"
+            placeholderTextColor={placeholderColor}
             value={email}
             onChangeText={setEmail}
-            style={styles.input}
+            style={[
+              styles.input,
+              { backgroundColor: inputBg, borderColor, color: textColor },
+            ]}
             keyboardType="email-address"
+            autoCapitalize="none"
           />
 
-          <TextInput
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-          />
+          <View style={styles.inputRow}>
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor={placeholderColor}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              style={[
+                styles.input,
+                styles.inputWithButton,
+                { backgroundColor: inputBg, borderColor, color: textColor },
+              ]}
+            />
 
-          <TextInput
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            style={styles.input}
-          />
+            <Pressable
+              style={[
+                styles.toggleButton,
+                { borderColor, backgroundColor: toggleBg },
+              ]}
+              onPress={() => setShowPassword((value) => !value)}
+            >
+              <ThemedText
+                style={[styles.toggleText, { color: toggleTextColor }]}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </ThemedText>
+            </Pressable>
+          </View>
+
+          <View style={styles.inputRow}>
+            <TextInput
+              placeholder="Confirm Password"
+              placeholderTextColor={placeholderColor}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+              style={[
+                styles.input,
+                styles.inputWithButton,
+                { backgroundColor: inputBg, borderColor, color: textColor },
+              ]}
+            />
+
+            <Pressable
+              style={[
+                styles.toggleButton,
+                { borderColor, backgroundColor: toggleBg },
+              ]}
+              onPress={() => setShowConfirmPassword((value) => !value)}
+            >
+              <ThemedText
+                style={[styles.toggleText, { color: toggleTextColor }]}
+              >
+                {showConfirmPassword ? "Hide" : "Show"}
+              </ThemedText>
+            </Pressable>
+          </View>
         </View>
 
-        {/* CTA BUTTON */}
-
-        {/* Replace your CTA button with this test setup */}
-
-        <Pressable style={styles.button} onPress={handleSignup}>
-          <ThemedText style={styles.buttonText}>
-            Create Account
+        <Pressable
+          onPress={() => router.push("./forgotPassword")}
+          style={styles.forgotPasswordContainer}
+        >
+          <ThemedText
+            style={[styles.forgotPasswordText, { color: forgotTextColor }]}
+          >
+            Forgot password?
           </ThemedText>
         </Pressable>
 
+        <Pressable style={styles.button} onPress={handleSignup}>
+          <ThemedText style={styles.buttonText}>Create Account</ThemedText>
+        </Pressable>
 
-
-     
-
-        {/* SIGN IN OPTION */}
         <View style={styles.bottomRow}>
           <ThemedText>Already have an account?</ThemedText>
 
-          <Pressable onPress={() => router.push("/signin")}>
+          <Pressable onPress={() => router.push("./signin")}>
             <ThemedText style={styles.link}>Sign In</ThemedText>
           </Pressable>
         </View>
@@ -140,13 +227,12 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
 
   scroll: {
     padding: 24,
     justifyContent: "center",
-    flexGrow:1
+    flexGrow: 1,
   },
 
   title: {
@@ -157,22 +243,55 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+
+  logo: {
+    width: 64,
+    height: 64,
+    resizeMode: "contain",
+  },
+
   subtitle: {
     textAlign: "center",
     marginBottom: 30,
-    color: "#555",
   },
 
   form: {
     gap: 12,
   },
 
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     padding: 14,
     borderRadius: 10,
-    backgroundColor: "#FAFAFA",
+  },
+
+  inputWithButton: {
+    flex: 1,
+    marginRight: 8,
+  },
+
+  toggleButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+
+  toggleText: {
+    fontWeight: "600",
+    fontSize: 13,
   },
 
   button: {
@@ -187,6 +306,16 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
+  },
+
+  forgotPasswordContainer: {
+    alignSelf: "flex-end",
+    marginTop: 10,
+  },
+
+  forgotPasswordText: {
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
 
   bottomRow: {

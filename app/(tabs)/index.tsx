@@ -1,20 +1,22 @@
-import { StyleSheet, View } from "react-native";
-import { Pressable } from "react-native";
 import { router } from "expo-router";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useThemeColor } from "@/hooks/use-theme-color";
-
-const metrics = [
-  { label: "Total workouts", value: "18" },
-  { label: "Calories burned", value: "5.2k" },
-  { label: "Streak", value: "12d" },
-];
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useWorkoutStore } from "@/stores/useWorkoutStore";
 
 export default function Dashboard() {
+  const totalWorkouts = useWorkoutStore((state) => state.totalWorkouts);
+  const streakDays = useWorkoutStore((state) => state.streakDays);
+  const latestWorkout = useWorkoutStore((state) => state.latestWorkout);
+  const recentWorkouts = useWorkoutStore((state) => state.recentWorkouts);
+  const plansByDay = useWorkoutStore((state) => state.plansByDay);
+  const user = useAuthStore((state) => state.user);
+  const loginCount = useAuthStore((state) => state.loginCount);
+
   const cardBg = useThemeColor(
     { light: "#FFFFFFCC", dark: "#2C2C2C" },
     "background",
@@ -33,37 +35,62 @@ export default function Dashboard() {
   );
   const borderColor = useThemeColor({ light: "#E5E7EB", dark: "#444" }, "icon");
 
+  const metrics = [
+    { label: "Total workouts", value: `${totalWorkouts || 0}` },
+    {
+      label: "Calories burned",
+      value: latestWorkout ? `${latestWorkout.calories}` : "0",
+    },
+    { label: "Streak", value: `${streakDays || 0}d` },
+  ];
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayPlan = plansByDay[todayKey];
+  const shouldShowWelcome = loginCount > 2 && !!user;
+  const displayName =
+    user?.displayName || user?.email?.split("@")[0] || "there";
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
       headerImage={
-        <IconSymbol
-          size={280}
-          color="#ffffff"
-          name="chevron.left.forwardslash.chevron.right"
+        <Image
+          source={require("@/assets/images/icon.png")}
           style={styles.headerImage}
+          resizeMode="cover"
         />
       }
     >
       <ThemedView style={styles.header}>
         <ThemedText type="title">FitConnect</ThemedText>
-        <ThemedText type="subtitle">Your all-in-one gym companion</ThemedText>
+        <ThemedText type="subtitle">
+          Your all-in-one gym and fitness companion
+        </ThemedText>
       </ThemedView>
       <ThemedView style={styles.dashboard}>
-        <ThemedView
-          style={[styles.card, { backgroundColor: cardBg, borderColor }]}
-        >
-          <ThemedText type="subtitle">Welcome back</ThemedText>
-          <ThemedText type="defaultSemiBold">Demo User</ThemedText>
-        </ThemedView>
+        {shouldShowWelcome && (
+          <ThemedView
+            style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+          >
+            <ThemedText type="subtitle">Welcome back, {displayName}</ThemedText>
+            <ThemedText type="defaultSemiBold">
+              You’re doing great — keep pushing.
+            </ThemedText>
+          </ThemedView>
+        )}
         <View style={styles.metricRow}>
           {metrics.map((metric) => (
             <ThemedView
               key={metric.label}
               style={[styles.metricCard, { backgroundColor: metricBg }]}
             >
-              <ThemedText type="defaultSemiBold">{metric.value}</ThemedText>
-              <ThemedText>{metric.label}</ThemedText>
+              {/* Added style={styles.centerText} */}
+              <ThemedText type="defaultSemiBold" style={styles.centerText}>
+                {metric.value}
+              </ThemedText>
+
+              {/* Added style={styles.metricLabel} */}
+              <ThemedText style={styles.metricLabel}>{metric.label}</ThemedText>
             </ThemedView>
           ))}
         </View>
@@ -73,10 +100,31 @@ export default function Dashboard() {
         <ThemedView
           style={[styles.planCard, { backgroundColor: cardBg, borderColor }]}
         >
-          <ThemedText type="defaultSemiBold">Upper body strength</ThemedText>
-          <ThemedText>Chest, shoulders, and triceps</ThemedText>
-          <ThemedText>45 min · 6 exercises</ThemedText>
+          <ThemedText type="defaultSemiBold">
+            {todayPlan ? todayPlan.title : "No plan for today yet"}
+          </ThemedText>
+          <ThemedText>
+            {todayPlan
+              ? todayPlan.description
+              : "Add a plan for today to see it here"}
+          </ThemedText>
+          <ThemedText>
+            {todayPlan
+              ? `${todayPlan.durationMinutes} min · ${todayPlan.exercises} exercises`
+              : "Tap below to create one"}
+          </ThemedText>
         </ThemedView>
+        <Pressable
+          style={[
+            styles.actionBtn,
+            { backgroundColor: actionBg, width: "100%" },
+          ]}
+          onPress={() => router.push("/plan" as never)}
+        >
+          <ThemedText type="defaultSemiBold" style={styles.centerText}>
+            {todayPlan ? "Edit today’s plan" : "Create today’s plan"}
+          </ThemedText>
+        </Pressable>
       </ThemedView>
 
       <ThemedView style={styles.section}>
@@ -85,15 +133,31 @@ export default function Dashboard() {
           style={[styles.planCard, { backgroundColor: cardBg, borderColor }]}
         >
           <ThemedText type="defaultSemiBold">
-            Last session — Push day
+            {latestWorkout
+              ? `Last session — ${latestWorkout.title}`
+              : "No workouts yet"}
           </ThemedText>
-          <ThemedText>Bench press, incline press, triceps dips</ThemedText>
-          <ThemedText>Completed: 60 min · 520 kcal</ThemedText>
+          <ThemedText>
+            {latestWorkout
+              ? `${latestWorkout.exercises} exercises · ${latestWorkout.durationMinutes} min`
+              : "Complete a workout to see it here"}
+          </ThemedText>
+          <ThemedText>
+            {latestWorkout
+              ? `Completed: ${latestWorkout.durationMinutes} min · ${latestWorkout.calories} kcal`
+              : "Start your first workout"}
+          </ThemedText>
         </ThemedView>
         <ThemedView style={styles.smallList}>
-          <ThemedText>• Squat — 3x5</ThemedText>
-          <ThemedText>• Deadlift — 1x5</ThemedText>
-          <ThemedText>• Pull-ups — 4x8</ThemedText>
+          {recentWorkouts.length > 0 ? (
+            recentWorkouts.map((workout) => (
+              <ThemedText key={workout.id}>
+                • {workout.title} — {workout.durationMinutes} min
+              </ThemedText>
+            ))
+          ) : (
+            <ThemedText>• No recent workouts yet</ThemedText>
+          )}
         </ThemedView>
       </ThemedView>
 
@@ -101,39 +165,55 @@ export default function Dashboard() {
         <ThemedText type="subtitle">Streak & Progress</ThemedText>
         <ThemedView style={[styles.streakCard, { backgroundColor: streakBg }]}>
           <ThemedText type="defaultSemiBold">
-            Current streak: 12 days
+            Current streak: {streakDays || 0} days
           </ThemedText>
-          <ThemedText>Keep it up — you are doing great.</ThemedText>
+          <ThemedText>
+            {streakDays > 0
+              ? "Keep it up — you are doing great."
+              : "Complete a workout today to start your streak."}
+          </ThemedText>
         </ThemedView>
       </ThemedView>
 
       <ThemedView style={styles.section}>
         <ThemedText type="subtitle">Quick Actions</ThemedText>
-        <View style={styles.actionsRow}>
-         <Pressable
-  style={[styles.actionBtn, { backgroundColor: actionBg }]}
-  onPress={() => router.push("/Workout")}
->
-  <ThemedText type="defaultSemiBold">
-    Start Workout
-  </ThemedText>
-</Pressable>
-  <Pressable
-  style={[styles.actionBtn, { backgroundColor: actionBg }]}
-  onPress={() => router.push("/AI")}
->
-  <ThemedText type="defaultSemiBold">
-    AI Trainer
-  </ThemedText>
-</Pressable>
+
+        <View style={styles.actionsGrid}>
           <Pressable
-  style={[styles.actionBtn, { backgroundColor: actionBg }]}
-  onPress={() => router.push("/bookTrainer")}
->
-  <ThemedText type="defaultSemiBold">
-    Book Trainer
-  </ThemedText>
-</Pressable>
+            style={[styles.actionBtn, { backgroundColor: actionBg }]}
+            onPress={() => router.push("/Workout")}
+          >
+            <ThemedText type="defaultSemiBold" style={styles.centerText}>
+              Start Workout
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={[styles.actionBtn, { backgroundColor: actionBg }]}
+            onPress={() => router.push("/AI")}
+          >
+            <ThemedText type="defaultSemiBold" style={styles.centerText}>
+              AI Trainer
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={[styles.actionBtn, { backgroundColor: actionBg }]}
+            onPress={() => router.push("/bookTrainer")}
+          >
+            <ThemedText type="defaultSemiBold" style={styles.centerText}>
+              Book Trainer
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={[styles.actionBtn, { backgroundColor: actionBg }]}
+            onPress={() => router.push("/friends")}
+          >
+            <ThemedText type="defaultSemiBold" style={styles.centerText}>
+              Friend requests
+            </ThemedText>
+          </Pressable>
         </View>
       </ThemedView>
     </ParallaxScrollView>
@@ -157,15 +237,27 @@ const styles = StyleSheet.create({
   metricRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 14,
+    gap: 10,
   },
   metricCard: {
     flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 6,
     padding: 20,
     borderRadius: 20,
     alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
+  },
+  metricLabel: {
+    textAlign: "center",
+    fontSize: 12,
+    marginTop: 4,
+    opacity: 0.8,
+  },
+  centerText: {
+    textAlign: "center",
   },
   section: {
     gap: 14,
@@ -188,23 +280,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
   },
-  actionsRow: {
+  actionsGrid: {
     flexDirection: "row",
-    gap: 14,
-    marginTop: 12,
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 6,
   },
+
   actionBtn: {
-    flex: 1,
-    padding: 16,
+    width: "48%",
+    flexGrow: 1,
+    paddingVertical: 18,
+    paddingHorizontal: 10,
     borderRadius: 16,
     alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
   },
   headerImage: {
-    position: "absolute",
-    top: 24,
-    left: 12,
-    opacity: 0.08,
+    width: "100%",
+    height: "100%",
+    opacity: 0.95,
   },
 });
