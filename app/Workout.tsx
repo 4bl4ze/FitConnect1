@@ -1,5 +1,6 @@
+import { useAudioPlayer } from "expo-audio";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     Alert,
     FlatList,
@@ -32,6 +33,10 @@ export default function StartWorkout() {
 
   const [exerciseName, setExerciseName] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const alarmPlayedRef = useRef(false);
+  const workoutAlarmPlayer = useAudioPlayer(
+    require("../assets/audio/timer-alarm.mp3"),
+  );
   const recordWorkout = useWorkoutStore((state) => state.recordWorkout);
 
   const screenBg = useThemeColor(
@@ -77,6 +82,34 @@ export default function StartWorkout() {
 
   const durationTotalSeconds = durationMinutes * 60 + durationSeconds;
 
+  const stopTimerAlarm = useCallback(() => {
+    workoutAlarmPlayer.pause();
+    workoutAlarmPlayer.seekTo(0);
+  }, [workoutAlarmPlayer]);
+
+  const triggerTimerAlarm = useCallback(() => {
+    try {
+      workoutAlarmPlayer.seekTo(0);
+      workoutAlarmPlayer.play();
+    } catch (error) {
+      console.warn("Could not play workout timer alarm:", error);
+    }
+
+    Alert.alert(
+      "Workout Complete ⏰",
+      "Your workout timer has reached zero.",
+      [
+        {
+          text: "Stop Alarm",
+          onPress: () => {
+            stopTimerAlarm();
+          },
+        },
+      ],
+      { cancelable: false },
+    );
+  }, [stopTimerAlarm, workoutAlarmPlayer]);
+
   useEffect(() => {
     if (!isRunning || seconds <= 0) return;
 
@@ -85,6 +118,12 @@ export default function StartWorkout() {
         if (prev <= 1) {
           clearInterval(interval);
           setIsRunning(false);
+
+          if (!alarmPlayedRef.current) {
+            alarmPlayedRef.current = true;
+            triggerTimerAlarm();
+          }
+
           return 0;
         }
 
@@ -93,7 +132,7 @@ export default function StartWorkout() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, seconds]);
+  }, [isRunning, seconds, triggerTimerAlarm]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -148,6 +187,8 @@ export default function StartWorkout() {
 
   const finishWorkout = () => {
     setIsRunning(false);
+    stopTimerAlarm();
+    alarmPlayedRef.current = false;
 
     const elapsedSeconds = Math.max(0, durationTotalSeconds - seconds);
 
@@ -225,6 +266,8 @@ export default function StartWorkout() {
           ]}
           onPress={() => {
             setIsRunning(false);
+            alarmPlayedRef.current = false;
+            stopTimerAlarm();
             setIsEditingDuration((prev) => !prev);
             setSeconds(durationTotalSeconds);
           }}
@@ -307,6 +350,8 @@ export default function StartWorkout() {
               if (seconds === 0) {
                 setSeconds(durationTotalSeconds);
               }
+              alarmPlayedRef.current = false;
+              stopTimerAlarm();
               setIsRunning(true);
             }}
           >
@@ -315,7 +360,10 @@ export default function StartWorkout() {
 
           <Pressable
             style={styles.lightBtn}
-            onPress={() => setIsRunning(false)}
+            onPress={() => {
+              setIsRunning(false);
+              stopTimerAlarm();
+            }}
           >
             <ThemedText style={styles.blueText}>Pause</ThemedText>
           </Pressable>
@@ -324,6 +372,8 @@ export default function StartWorkout() {
             style={styles.redBtn}
             onPress={() => {
               setIsRunning(false);
+              alarmPlayedRef.current = false;
+              stopTimerAlarm();
               setSeconds(durationTotalSeconds);
             }}
           >
