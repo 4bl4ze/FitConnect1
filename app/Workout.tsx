@@ -23,7 +23,12 @@ type Exercise = {
 
 export default function StartWorkout() {
   const [isRunning, setIsRunning] = useState(false);
-  const [seconds, setSeconds] = useState(0);
+  const [isEditingDuration, setIsEditingDuration] = useState(false);
+  const [durationMinutes, setDurationMinutes] = useState(5);
+  const [durationSeconds, setDurationSeconds] = useState(0);
+  const [seconds, setSeconds] = useState(
+    durationMinutes * 60 + durationSeconds,
+  );
 
   const [exerciseName, setExerciseName] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -70,19 +75,31 @@ export default function StartWorkout() {
     "tint",
   );
 
+  const durationTotalSeconds = durationMinutes * 60 + durationSeconds;
+
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
+    if (!isRunning || seconds <= 0) return;
 
-    if (isRunning) {
-      interval = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-      }, 1000);
+    const interval = setInterval(() => {
+      setSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setIsRunning(false);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, seconds]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      setSeconds(durationTotalSeconds);
     }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRunning]);
+  }, [durationTotalSeconds, isRunning]);
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -132,16 +149,21 @@ export default function StartWorkout() {
   const finishWorkout = () => {
     setIsRunning(false);
 
+    const elapsedSeconds = Math.max(0, durationTotalSeconds - seconds);
+
     recordWorkout({
       title: exercises.length > 0 ? exercises[0].name : "Full body workout",
-      durationMinutes: Math.max(1, Math.round(seconds / 60)),
-      calories: Math.max(180, exercises.length * 80 + Math.round(seconds / 20)),
+      durationMinutes: Math.max(1, Math.round(elapsedSeconds / 60)),
+      calories: Math.max(
+        180,
+        exercises.length * 80 + Math.round(elapsedSeconds / 20),
+      ),
       exercises: exercises.length,
     });
 
     Alert.alert(
       "Workout Complete 🎉",
-      `Time: ${formatTime(seconds)}\nExercises: ${exercises.length}`,
+      `Time: ${formatTime(elapsedSeconds)}\nExercises: ${exercises.length}`,
     );
 
     router.back();
@@ -189,9 +211,11 @@ export default function StartWorkout() {
       <View
         style={[styles.timerCard, { backgroundColor: cardBg, borderColor }]}
       >
-        <ThemedText type="subtitle">Timer</ThemedText>
+        <ThemedText style={styles.durationHint}>
+          Tap timer to edit minutes and seconds
+        </ThemedText>
 
-        <View
+        <Pressable
           style={[
             styles.timerDisplay,
             {
@@ -199,14 +223,93 @@ export default function StartWorkout() {
               borderColor: timerBorderColor,
             },
           ]}
+          onPress={() => {
+            setIsRunning(false);
+            setIsEditingDuration((prev) => !prev);
+            setSeconds(durationTotalSeconds);
+          }}
         >
           <ThemedText style={[styles.timer, { color: timerTextColor }]}>
             {formatTime(seconds)}
           </ThemedText>
-        </View>
+        </Pressable>
+
+        {isEditingDuration && (
+          <View style={styles.durationControlRow}>
+            <View
+              style={[
+                styles.durationControlCard,
+                { backgroundColor: surfaceBg, borderColor },
+              ]}
+            >
+              <ThemedText style={styles.durationControlLabel}>
+                Minutes
+              </ThemedText>
+              <View style={styles.durationControlButtons}>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    setDurationMinutes((prev) => Math.max(0, prev - 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>−</ThemedText>
+                </Pressable>
+                <ThemedText style={styles.controlValue}>
+                  {durationMinutes}
+                </ThemedText>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() => setDurationMinutes((prev) => prev + 1)}
+                >
+                  <ThemedText style={styles.blueText}>+</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+
+            <View
+              style={[
+                styles.durationControlCard,
+                { backgroundColor: surfaceBg, borderColor },
+              ]}
+            >
+              <ThemedText style={styles.durationControlLabel}>
+                Seconds
+              </ThemedText>
+              <View style={styles.durationControlButtons}>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    setDurationSeconds((prev) => Math.max(0, prev - 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>−</ThemedText>
+                </Pressable>
+                <ThemedText style={styles.controlValue}>
+                  {durationSeconds}
+                </ThemedText>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    setDurationSeconds((prev) => Math.min(59, prev + 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>+</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
 
         <View style={styles.row}>
-          <Pressable style={styles.blueBtn} onPress={() => setIsRunning(true)}>
+          <Pressable
+            style={styles.blueBtn}
+            onPress={() => {
+              if (seconds === 0) {
+                setSeconds(durationTotalSeconds);
+              }
+              setIsRunning(true);
+            }}
+          >
             <ThemedText style={styles.whiteText}>Start</ThemedText>
           </Pressable>
 
@@ -221,7 +324,7 @@ export default function StartWorkout() {
             style={styles.redBtn}
             onPress={() => {
               setIsRunning(false);
-              setSeconds(0);
+              setSeconds(durationTotalSeconds);
             }}
           >
             <ThemedText style={styles.whiteText}>Reset</ThemedText>
@@ -364,6 +467,49 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: "center",
     borderWidth: 1,
+  },
+
+  durationHint: {
+    fontSize: 14,
+    color: "#64748B",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+
+  durationRow: {
+    width: "100%",
+    maxWidth: 280,
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+
+  durationControlCard: {
+    flex: 1,
+    borderRadius: 14,
+    padding: 14,
+    gap: 10,
+    borderWidth: 1,
+  },
+
+  durationControlLabel: {
+    fontWeight: "600",
+  },
+
+  durationControlButtons: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  durationControlRow: {
+    width: "100%",
+    maxWidth: 280,
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 10,
   },
 
   timerDisplay: {
