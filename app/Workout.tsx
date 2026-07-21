@@ -1,5 +1,6 @@
+import { useAudioPlayer } from "expo-audio";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     Alert,
     FlatList,
@@ -23,10 +24,19 @@ type Exercise = {
 
 export default function StartWorkout() {
   const [isRunning, setIsRunning] = useState(false);
-  const [seconds, setSeconds] = useState(0);
+  const [isEditingDuration, setIsEditingDuration] = useState(false);
+  const [durationMinutes, setDurationMinutes] = useState(5);
+  const [durationSeconds, setDurationSeconds] = useState(0);
+  const [seconds, setSeconds] = useState(
+    durationMinutes * 60 + durationSeconds,
+  );
 
   const [exerciseName, setExerciseName] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const alarmPlayedRef = useRef(false);
+  const workoutAlarmPlayer = useAudioPlayer(
+    require("../assets/audio/timer-alarm.mp3"),
+  );
   const recordWorkout = useWorkoutStore((state) => state.recordWorkout);
 
   const screenBg = useThemeColor(
@@ -70,19 +80,65 @@ export default function StartWorkout() {
     "tint",
   );
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
+  const durationTotalSeconds = durationMinutes * 60 + durationSeconds;
 
-    if (isRunning) {
-      interval = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-      }, 1000);
+  const stopTimerAlarm = useCallback(() => {
+    workoutAlarmPlayer.pause();
+    workoutAlarmPlayer.seekTo(0);
+  }, [workoutAlarmPlayer]);
+
+  const triggerTimerAlarm = useCallback(() => {
+    try {
+      workoutAlarmPlayer.seekTo(0);
+      workoutAlarmPlayer.play();
+    } catch (error) {
+      console.warn("Could not play workout timer alarm:", error);
     }
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRunning]);
+    Alert.alert(
+      "Workout Complete ⏰",
+      "Your workout timer has reached zero.",
+      [
+        {
+          text: "Stop Alarm",
+          onPress: () => {
+            stopTimerAlarm();
+          },
+        },
+      ],
+      { cancelable: false },
+    );
+  }, [stopTimerAlarm, workoutAlarmPlayer]);
+
+  useEffect(() => {
+    if (!isRunning || seconds <= 0) return;
+
+    const interval = setInterval(() => {
+      setSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setIsRunning(false);
+
+          if (!alarmPlayedRef.current) {
+            alarmPlayedRef.current = true;
+            triggerTimerAlarm();
+          }
+
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning, seconds, triggerTimerAlarm]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      setSeconds(durationTotalSeconds);
+    }
+  }, [durationTotalSeconds, isRunning]);
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -131,17 +187,24 @@ export default function StartWorkout() {
 
   const finishWorkout = () => {
     setIsRunning(false);
+    stopTimerAlarm();
+    alarmPlayedRef.current = false;
+
+    const elapsedSeconds = Math.max(0, durationTotalSeconds - seconds);
 
     recordWorkout({
       title: exercises.length > 0 ? exercises[0].name : "Full body workout",
-      durationMinutes: Math.max(1, Math.round(seconds / 60)),
-      calories: Math.max(180, exercises.length * 80 + Math.round(seconds / 20)),
+      durationMinutes: Math.max(1, Math.round(elapsedSeconds / 60)),
+      calories: Math.max(
+        180,
+        exercises.length * 80 + Math.round(elapsedSeconds / 20),
+      ),
       exercises: exercises.length,
     });
 
     Alert.alert(
       "Workout Complete 🎉",
-      `Time: ${formatTime(seconds)}\nExercises: ${exercises.length}`,
+      `Time: ${formatTime(elapsedSeconds)}\nExercises: ${exercises.length}`,
     );
 
     router.back();
@@ -189,9 +252,11 @@ export default function StartWorkout() {
       <View
         style={[styles.timerCard, { backgroundColor: cardBg, borderColor }]}
       >
-        <ThemedText type="subtitle">Timer</ThemedText>
+        <ThemedText style={styles.durationHint}>
+          Tap timer to edit minutes and seconds
+        </ThemedText>
 
-        <View
+        <Pressable
           style={[
             styles.timerDisplay,
             {
@@ -199,20 +264,106 @@ export default function StartWorkout() {
               borderColor: timerBorderColor,
             },
           ]}
+          onPress={() => {
+            setIsRunning(false);
+            alarmPlayedRef.current = false;
+            stopTimerAlarm();
+            setIsEditingDuration((prev) => !prev);
+            setSeconds(durationTotalSeconds);
+          }}
         >
           <ThemedText style={[styles.timer, { color: timerTextColor }]}>
             {formatTime(seconds)}
           </ThemedText>
-        </View>
+        </Pressable>
+
+        {isEditingDuration && (
+          <View style={styles.durationControlRow}>
+            <View
+              style={[
+                styles.durationControlCard,
+                { backgroundColor: surfaceBg, borderColor },
+              ]}
+            >
+              <ThemedText style={styles.durationControlLabel}>
+                Minutes
+              </ThemedText>
+              <View style={styles.durationControlButtons}>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    setDurationMinutes((prev) => Math.max(0, prev - 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>−</ThemedText>
+                </Pressable>
+                <ThemedText style={styles.controlValue}>
+                  {durationMinutes}
+                </ThemedText>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() => setDurationMinutes((prev) => prev + 1)}
+                >
+                  <ThemedText style={styles.blueText}>+</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+
+            <View
+              style={[
+                styles.durationControlCard,
+                { backgroundColor: surfaceBg, borderColor },
+              ]}
+            >
+              <ThemedText style={styles.durationControlLabel}>
+                Seconds
+              </ThemedText>
+              <View style={styles.durationControlButtons}>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    setDurationSeconds((prev) => Math.max(0, prev - 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>−</ThemedText>
+                </Pressable>
+                <ThemedText style={styles.controlValue}>
+                  {durationSeconds}
+                </ThemedText>
+                <Pressable
+                  style={styles.controlBtn}
+                  onPress={() =>
+                    setDurationSeconds((prev) => Math.min(59, prev + 1))
+                  }
+                >
+                  <ThemedText style={styles.blueText}>+</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
 
         <View style={styles.row}>
-          <Pressable style={styles.blueBtn} onPress={() => setIsRunning(true)}>
+          <Pressable
+            style={styles.blueBtn}
+            onPress={() => {
+              if (seconds === 0) {
+                setSeconds(durationTotalSeconds);
+              }
+              alarmPlayedRef.current = false;
+              stopTimerAlarm();
+              setIsRunning(true);
+            }}
+          >
             <ThemedText style={styles.whiteText}>Start</ThemedText>
           </Pressable>
 
           <Pressable
             style={styles.lightBtn}
-            onPress={() => setIsRunning(false)}
+            onPress={() => {
+              setIsRunning(false);
+              stopTimerAlarm();
+            }}
           >
             <ThemedText style={styles.blueText}>Pause</ThemedText>
           </Pressable>
@@ -221,7 +372,9 @@ export default function StartWorkout() {
             style={styles.redBtn}
             onPress={() => {
               setIsRunning(false);
-              setSeconds(0);
+              alarmPlayedRef.current = false;
+              stopTimerAlarm();
+              setSeconds(durationTotalSeconds);
             }}
           >
             <ThemedText style={styles.whiteText}>Reset</ThemedText>
@@ -364,6 +517,49 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: "center",
     borderWidth: 1,
+  },
+
+  durationHint: {
+    fontSize: 14,
+    color: "#64748B",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+
+  durationRow: {
+    width: "100%",
+    maxWidth: 280,
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+
+  durationControlCard: {
+    flex: 1,
+    borderRadius: 14,
+    padding: 14,
+    gap: 10,
+    borderWidth: 1,
+  },
+
+  durationControlLabel: {
+    fontWeight: "600",
+  },
+
+  durationControlButtons: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  durationControlRow: {
+    width: "100%",
+    maxWidth: 280,
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 10,
   },
 
   timerDisplay: {
