@@ -34,10 +34,12 @@ export default function StartWorkout() {
   const [exerciseName, setExerciseName] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const alarmPlayedRef = useRef(false);
+  const autoRecordedRef = useRef(false);
   const workoutAlarmPlayer = useAudioPlayer(
     require("../assets/audio/timer-alarm.mp3"),
   );
   const recordWorkout = useWorkoutStore((state) => state.recordWorkout);
+  const setOngoingWorkout = useWorkoutStore((state) => state.setOngoingWorkout);
 
   const screenBg = useThemeColor(
     { light: "#F8FAFC", dark: "#0F172A" },
@@ -122,6 +124,26 @@ export default function StartWorkout() {
           if (!alarmPlayedRef.current) {
             alarmPlayedRef.current = true;
             triggerTimerAlarm();
+
+            // Auto-record the workout when timer naturally reaches zero
+            if (!autoRecordedRef.current && exercises.length > 0) {
+              autoRecordedRef.current = true;
+
+              const elapsedSeconds = durationTotalSeconds; // full duration reached
+
+              recordWorkout({
+                title:
+                  exercises.length > 0
+                    ? exercises[0].name
+                    : "Full body workout",
+                durationMinutes: parseFloat((elapsedSeconds / 60).toFixed(2)),
+                calories: Math.max(
+                  180,
+                  exercises.length * 80 + Math.round(elapsedSeconds / 20),
+                ),
+                exercises: exercises.length,
+              });
+            }
           }
 
           return 0;
@@ -192,9 +214,29 @@ export default function StartWorkout() {
 
     const elapsedSeconds = Math.max(0, durationTotalSeconds - seconds);
 
+    // If the user finished a workout without adding any exercises, do not
+    // record it — leave dashboard totals at zero.
+    if (exercises.length === 0) {
+      Alert.alert(
+        "Workout Complete",
+        "No exercises were added — nothing was recorded.",
+      );
+      router.back();
+      return;
+    }
+
+    // If the workout was already auto-recorded when the timer reached zero,
+    // avoid recording it again.
+    if (autoRecordedRef.current) {
+      Alert.alert("Workout Complete", "This workout was already recorded.");
+      router.back();
+      return;
+    }
+
     recordWorkout({
       title: exercises.length > 0 ? exercises[0].name : "Full body workout",
-      durationMinutes: Math.max(1, Math.round(elapsedSeconds / 60)),
+      // store minutes as decimal including seconds (e.g. 0.5 for 30s)
+      durationMinutes: parseFloat((elapsedSeconds / 60).toFixed(2)),
       calories: Math.max(
         180,
         exercises.length * 80 + Math.round(elapsedSeconds / 20),
@@ -223,6 +265,8 @@ export default function StartWorkout() {
             setExercises([]);
             setIsRunning(false);
             setSeconds(0);
+            setOngoingWorkout(null);
+            autoRecordedRef.current = false;
           },
         },
       ],
@@ -352,7 +396,16 @@ export default function StartWorkout() {
               }
               alarmPlayedRef.current = false;
               stopTimerAlarm();
+              autoRecordedRef.current = false;
               setIsRunning(true);
+              if (exercises.length > 0) {
+                setOngoingWorkout({
+                  id: Date.now().toString(),
+                  title: exercises[0].name ?? "Workout",
+                  startedAt: new Date().toISOString(),
+                  exercises: exercises.length,
+                });
+              }
             }}
           >
             <ThemedText style={styles.whiteText}>Start</ThemedText>
@@ -375,6 +428,9 @@ export default function StartWorkout() {
               alarmPlayedRef.current = false;
               stopTimerAlarm();
               setSeconds(durationTotalSeconds);
+              // clear ongoing workout when reset
+              setOngoingWorkout(null);
+              autoRecordedRef.current = false;
             }}
           >
             <ThemedText style={styles.whiteText}>Reset</ThemedText>

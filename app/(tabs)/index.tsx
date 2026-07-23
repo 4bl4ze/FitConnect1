@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
@@ -13,6 +14,7 @@ export default function Dashboard() {
   const streakDays = useWorkoutStore((state) => state.streakDays);
   const latestWorkout = useWorkoutStore((state) => state.latestWorkout);
   const recentWorkouts = useWorkoutStore((state) => state.recentWorkouts);
+  const ongoingWorkout = useWorkoutStore((state) => state.ongoingWorkout);
   const plansByDay = useWorkoutStore((state) => state.plansByDay);
   const user = useAuthStore((state) => state.user);
   const loginCount = useAuthStore((state) => state.loginCount);
@@ -43,6 +45,29 @@ export default function Dashboard() {
     },
     { label: "Streak", value: `${streakDays || 0}d` },
   ];
+
+  const formatDurationDisplay = (minutesDecimal: number) => {
+    const totalSec = Math.round(minutesDecimal * 60);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    if (m === 0) return `${s}s`;
+    return `${m}:${s.toString().padStart(2, "0")} min`;
+  };
+
+  const [nowTick, setNowTick] = useState(Date.now());
+  useEffect(() => {
+    if (!ongoingWorkout) return;
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [ongoingWorkout]);
+
+  const ongoingElapsedDisplay = () => {
+    if (!ongoingWorkout) return null;
+    const elapsedSec = Math.round(
+      (Date.now() - new Date(ongoingWorkout.startedAt).getTime()) / 1000,
+    );
+    return formatDurationDisplay(elapsedSec / 60);
+  };
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayPlan = plansByDay[todayKey];
@@ -133,26 +158,37 @@ export default function Dashboard() {
           style={[styles.planCard, { backgroundColor: cardBg, borderColor }]}
         >
           <ThemedText type="defaultSemiBold">
-            {latestWorkout
-              ? `Last session — ${latestWorkout.title}`
-              : "No workouts yet"}
+            {ongoingWorkout
+              ? `In progress — ${ongoingWorkout.title}`
+              : latestWorkout
+                ? `Last session — ${latestWorkout.title}`
+                : "No workouts yet"}
           </ThemedText>
           <ThemedText>
-            {latestWorkout
-              ? `${latestWorkout.exercises} exercises · ${latestWorkout.durationMinutes} min`
-              : "Complete a workout to see it here"}
+            {ongoingWorkout
+              ? `${ongoingWorkout.exercises} exercises · ${ongoingElapsedDisplay()}`
+              : latestWorkout
+                ? `${latestWorkout.exercises} exercises · ${formatDurationDisplay(
+                    latestWorkout.durationMinutes,
+                  )}`
+                : "Complete a workout to see it here"}
           </ThemedText>
           <ThemedText>
-            {latestWorkout
-              ? `Completed: ${latestWorkout.durationMinutes} min · ${latestWorkout.calories} kcal`
-              : "Start your first workout"}
+            {ongoingWorkout
+              ? "Keep going — your workout is in progress"
+              : latestWorkout
+                ? `Completed: ${formatDurationDisplay(
+                    latestWorkout.durationMinutes,
+                  )} · ${latestWorkout.calories} kcal`
+                : "Start your first workout"}
           </ThemedText>
         </ThemedView>
         <ThemedView style={styles.smallList}>
           {recentWorkouts.length > 0 ? (
             recentWorkouts.map((workout) => (
               <ThemedText key={workout.id}>
-                • {workout.title} — {workout.durationMinutes} min
+                • {workout.title} —{" "}
+                {formatDurationDisplay(workout.durationMinutes)}
               </ThemedText>
             ))
           ) : (

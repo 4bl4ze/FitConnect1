@@ -23,9 +23,23 @@ interface WorkoutStore {
   lastCompletedAt: string | null;
   latestWorkout: CompletedWorkout | null;
   recentWorkouts: CompletedWorkout[];
+  ongoingWorkout: {
+    id: string;
+    title: string;
+    startedAt: string; // ISO
+    exercises: number;
+  } | null;
   plansByDay: Record<string, DailyPlan>;
   recordWorkout: (
     workout: Omit<CompletedWorkout, "id" | "completedAt">,
+  ) => void;
+  setOngoingWorkout: (
+    w: {
+      id: string;
+      title: string;
+      startedAt: string;
+      exercises: number;
+    } | null,
   ) => void;
   setPlanForDay: (dayKey: string, plan: Omit<DailyPlan, "updatedAt">) => void;
 }
@@ -37,6 +51,7 @@ export const useWorkoutStore = create<WorkoutStore>((set) => ({
   latestWorkout: null,
   recentWorkouts: [],
   plansByDay: {},
+  ongoingWorkout: null,
   recordWorkout: (workout) => {
     const completedAt = new Date().toISOString();
     const dayKey = completedAt.slice(0, 10);
@@ -73,9 +88,11 @@ export const useWorkoutStore = create<WorkoutStore>((set) => ({
         lastCompletedAt: dayKey,
         latestWorkout: completedWorkout,
         recentWorkouts: [completedWorkout, ...state.recentWorkouts].slice(0, 3),
+        ongoingWorkout: null,
       };
     });
   },
+  setOngoingWorkout: (w) => set(() => ({ ongoingWorkout: w })),
   setPlanForDay: (dayKey, plan) => {
     set((state) => ({
       plansByDay: {
