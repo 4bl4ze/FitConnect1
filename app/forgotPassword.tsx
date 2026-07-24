@@ -94,60 +94,6 @@ const handleResetRequest = async () => {
     }
   };
 
-
-
-
-
-
-  
-//     const handleResetRequest = async () => {
-//   // 1. Basic validation (adds .trim() to clean inputs)
-//   if (!email.trim()) {
-//     Alert.alert("Error", "Please enter your email address.");
-//     return;
-//   }
-
-//   const emailRegex = /\S+@\S+\.\S+/;
-//   if (!emailRegex.test(email.trim())) {
-//     Alert.alert("Invalid Email", "Please enter a valid email address.");
-//     return;
-//   }
-
-//   try {
-//     setIsLoading(true);
-
-//     // 2. Real API Call to Spring Boot
-//     await requestPasswordReset(email.trim());
-
-//     // 3. Success Feedback (fixed route path to absolute '/signin')
-//     Alert.alert(
-//       "Reset Email Sent",
-//       "Check your inbox for instructions to reset your password.",
-//       [
-//         {
-//           text: "Back to Sign In",
-//           onPress: () => router.replace("/signin"),
-//         },
-//       ],
-//     );
-//   } catch (error: any) {
-//     console.error("Password reset error:", error);
-
-//     // Extracts real Spring Boot error string (e.g. "User not found")
-//     const errorMessage =
-//       error?.response?.data?.message ||
-//       (typeof error?.response?.data === "string" ? error.response.data : null) ||
-//       "Something went wrong. Please try again later.";
-
-//     Alert.alert("Error", errorMessage);
-//   } finally {
-//     setIsLoading(false);
-//   }
-// };
-  
-
-
-
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor }]}
