@@ -1,4 +1,5 @@
 import { useAudioPlayer } from "expo-audio";
+import { createWorkout } from "@/services/workoutService";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -20,6 +21,7 @@ type Exercise = {
   name: string;
   sets: number;
   reps: number;
+  weight?: number;
 };
 
 export default function StartWorkout() {
@@ -176,6 +178,7 @@ export default function StartWorkout() {
       name: exerciseName,
       sets: 3,
       reps: 10,
+      weight: 0
     };
 
     setExercises((prev) => [...prev, newExercise]);
@@ -207,51 +210,88 @@ export default function StartWorkout() {
     );
   };
 
-  const finishWorkout = () => {
+
+// 1. Add this state at the top of your component:
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+// 2. Updated finishWorkout handler:
+const finishWorkout = async () => {
+    if (isSubmitting) return;
+
     setIsRunning(false);
     stopTimerAlarm();
     alarmPlayedRef.current = false;
 
     const elapsedSeconds = Math.max(0, durationTotalSeconds - seconds);
+    const calculatedDuration = Math.max(1, Math.round(elapsedSeconds / 60));
+    const workoutTitle = exercises.length > 0 ? exercises[0].name : "Full Body Workout";
 
-    // If the user finished a workout without adding any exercises, do not
-    // record it — leave dashboard totals at zero.
-    if (exercises.length === 0) {
+    try {
+      setIsSubmitting(true);
+
+      // Prepare list to save (fallback to 1 default if list is empty)
+      const exerciseListToSave =
+        exercises.length > 0
+          ? exercises
+          : [
+              {
+                id: "default",
+                name: "Full Body Workout",
+                sets: 1,
+                reps: 10,
+                weight: 0,
+              },
+            ];
+
+      // Save each exercise entry with fields matching Workout.java
+      const savePromises = exerciseListToSave.map((ex) => {
+        const payload = {
+          exerciseName: ex.name || "General Exercise",
+          sets: Math.max(1, Number(ex.sets) || 1), // Enforces @Min(1)
+          reps: Math.max(1, Number(ex.reps) || 1), // Enforces @Min(1)
+          weight: Number(ex.weight) || 0.0,
+        };
+        return createWorkout(payload);
+      });
+
+      await Promise.all(savePromises);
+
+      // Local state update in Zustand
+      recordWorkout({
+        title: workoutTitle,
+        durationMinutes: calculatedDuration,
+        calories: Math.max(
+          180,
+          exercises.length * 80 + Math.round(elapsedSeconds / 20)
+        ),
+        exercises: exercises.length,
+      });
+
       Alert.alert(
-        "Workout Complete",
-        "No exercises were added — nothing was recorded.",
+        "Workout Complete 🎉",
+        `Time: ${formatTime(elapsedSeconds)}\nExercises: ${exerciseListToSave.length}`,
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(tabs)"),
+          },
+        ]
       );
-      router.back();
-      return;
+    } catch (error: any) {
+      console.error("Failed to save workout to Spring Boot:", error);
+
+      Alert.alert(
+        "Save Failed ⚠️",
+        "Could not save workout to the server. Please check your network connection or server status."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // If the workout was already auto-recorded when the timer reached zero,
-    // avoid recording it again.
-    if (autoRecordedRef.current) {
-      Alert.alert("Workout Complete", "This workout was already recorded.");
-      router.back();
-      return;
-    }
-
-    recordWorkout({
-      title: exercises.length > 0 ? exercises[0].name : "Full body workout",
-      // store minutes as decimal including seconds (e.g. 0.5 for 30s)
-      durationMinutes: parseFloat((elapsedSeconds / 60).toFixed(2)),
-      calories: Math.max(
-        180,
-        exercises.length * 80 + Math.round(elapsedSeconds / 20),
-      ),
-      exercises: exercises.length,
-    });
-
-    Alert.alert(
-      "Workout Complete 🎉",
-      `Time: ${formatTime(elapsedSeconds)}\nExercises: ${exercises.length}`,
-    );
-
-    router.back();
   };
 
+
+
+  
   const removeWorkout = () => {
     Alert.alert(
       "Delete Workout",
@@ -732,3 +772,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
