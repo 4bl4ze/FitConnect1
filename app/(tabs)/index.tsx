@@ -16,6 +16,10 @@ export default function Dashboard() {
   const recentWorkouts = useWorkoutStore((state) => state.recentWorkouts);
   const ongoingWorkout = useWorkoutStore((state) => state.ongoingWorkout);
   const plansByDay = useWorkoutStore((state) => state.plansByDay);
+  const stepsByDay = useWorkoutStore((state) => state.stepsByDay);
+  const trackingEnabledByDay = useWorkoutStore(
+    (state) => state.trackingEnabledByDay,
+  );
   const user = useAuthStore((state) => state.user);
   const loginCount = useAuthStore((state) => state.loginCount);
 
@@ -23,6 +27,7 @@ export default function Dashboard() {
     { light: "#FFFFFFCC", dark: "#2C2C2C" },
     "background",
   );
+  const tint = useThemeColor({}, "tint");
   const metricBg = useThemeColor(
     { light: "#F3F4F6", dark: "#1F1F1F" },
     "background",
@@ -54,7 +59,7 @@ export default function Dashboard() {
     return `${m}:${s.toString().padStart(2, "0")} min`;
   };
 
-  const [nowTick, setNowTick] = useState(Date.now());
+  const [, setNowTick] = useState(Date.now());
   useEffect(() => {
     if (!ongoingWorkout) return;
     const id = setInterval(() => setNowTick(Date.now()), 1000);
@@ -71,9 +76,25 @@ export default function Dashboard() {
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayPlan = plansByDay[todayKey];
+  const todaySteps = stepsByDay[todayKey] ?? 0;
+  const todayTrackingEnabled = trackingEnabledByDay[todayKey] ?? true;
+  const completedDays = useWorkoutStore((state) => state.completedDays);
   const shouldShowWelcome = loginCount > 2 && !!user;
   const displayName =
     user?.displayName || user?.email?.split("@")[0] || "there";
+
+  const getDayKey = (date: Date) => date.toISOString().slice(0, 10);
+  const last7Days = Array.from({ length: 7 }).map((_, idx) => {
+    const day = new Date();
+    day.setDate(day.getDate() - (6 - idx));
+    const key = getDayKey(day);
+    return {
+      label: day
+        .toLocaleDateString(undefined, { weekday: "short" })
+        .slice(0, 3),
+      completed: Boolean(completedDays[key]),
+    };
+  });
 
   return (
     <ParallaxScrollView
@@ -87,12 +108,72 @@ export default function Dashboard() {
       }
     >
       <ThemedView style={styles.header}>
-        <ThemedText type="title">FitConnect</ThemedText>
-        <ThemedText type="subtitle">
-          Your all-in-one gym and fitness companion
+        <ThemedText type="title" style={styles.heroTitle}>
+          FitConnect
+        </ThemedText>
+        <ThemedText type="subtitle" style={styles.heroSubtitle}>
+          Your gym and fitness companion
         </ThemedText>
       </ThemedView>
       <ThemedView style={styles.dashboard}>
+        <View style={styles.topCardsRow}>
+          <Pressable
+            onPress={() => router.push("/plan" as never)}
+            style={({ pressed }) => [
+              styles.largeCard,
+              { backgroundColor: tint, opacity: pressed ? 0.95 : 1 },
+            ]}
+          >
+            <ThemedText style={styles.largeCardTitle}>
+              {todayPlan ? todayPlan.title : "No plan for today"}
+            </ThemedText>
+            {todayPlan ? (
+              <>
+                <ThemedText style={styles.largeCardSubtitle}>
+                  {todayPlan.description}
+                </ThemedText>
+                <ThemedText style={styles.largeCardSubtitle}>
+                  {`${todayPlan.durationMinutes} min · ${todayPlan.exercises} exercises`}
+                </ThemedText>
+              </>
+            ) : (
+              <ThemedText style={styles.largeCardSubtitle}>
+                Tap to create a plan
+              </ThemedText>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/steps" as never)}
+            style={({ pressed }) => [
+              styles.largeCard,
+              {
+                backgroundColor: tint,
+                opacity: pressed ? 0.95 : 1,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.24)",
+                shadowColor: tint,
+                shadowOpacity: 0.16,
+                shadowOffset: { width: 0, height: 10 },
+                shadowRadius: 22,
+                elevation: 8,
+              },
+            ]}
+          >
+            <ThemedText style={styles.largeCardTitle}>
+              Track your steps
+            </ThemedText>
+            <ThemedText style={styles.largeCardSubtitle}>
+              Tap to view daily step history
+            </ThemedText>
+            <ThemedText style={styles.largeCardSubtitle}>
+              {todayTrackingEnabled
+                ? `Today: ${todaySteps} steps`
+                : "Step tracking paused for today"}
+            </ThemedText>
+          </Pressable>
+        </View>
+
         {shouldShowWelcome && (
           <ThemedView
             style={[styles.card, { backgroundColor: cardBg, borderColor }]}
@@ -103,54 +184,22 @@ export default function Dashboard() {
             </ThemedText>
           </ThemedView>
         )}
+
         <View style={styles.metricRow}>
           {metrics.map((metric) => (
             <ThemedView
               key={metric.label}
               style={[styles.metricCard, { backgroundColor: metricBg }]}
             >
-              {/* Added style={styles.centerText} */}
               <ThemedText type="defaultSemiBold" style={styles.centerText}>
                 {metric.value}
               </ThemedText>
-
-              {/* Added style={styles.metricLabel} */}
               <ThemedText style={styles.metricLabel}>{metric.label}</ThemedText>
             </ThemedView>
           ))}
         </View>
       </ThemedView>
-      <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Today’s plan</ThemedText>
-        <ThemedView
-          style={[styles.planCard, { backgroundColor: cardBg, borderColor }]}
-        >
-          <ThemedText type="defaultSemiBold">
-            {todayPlan ? todayPlan.title : "No plan for today yet"}
-          </ThemedText>
-          <ThemedText>
-            {todayPlan
-              ? todayPlan.description
-              : "Add a plan for today to see it here"}
-          </ThemedText>
-          <ThemedText>
-            {todayPlan
-              ? `${todayPlan.durationMinutes} min · ${todayPlan.exercises} exercises`
-              : "Tap below to create one"}
-          </ThemedText>
-        </ThemedView>
-        <Pressable
-          style={[
-            styles.actionBtn,
-            { backgroundColor: actionBg, width: "100%" },
-          ]}
-          onPress={() => router.push("/plan" as never)}
-        >
-          <ThemedText type="defaultSemiBold" style={styles.centerText}>
-            {todayPlan ? "Edit today’s plan" : "Create today’s plan"}
-          </ThemedText>
-        </Pressable>
-      </ThemedView>
+      {/* Today's plan moved into the top card — removed duplicate section */}
 
       <ThemedView style={styles.section}>
         <ThemedText type="subtitle">Recent workout</ThemedText>
@@ -198,14 +247,41 @@ export default function Dashboard() {
       </ThemedView>
 
       <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Streak & Progress</ThemedText>
         <ThemedView style={[styles.streakCard, { backgroundColor: streakBg }]}>
-          <ThemedText type="defaultSemiBold">
+          <View style={styles.streakHeader}>
+            <ThemedText type="subtitle">Streak</ThemedText>
+            <Pressable
+              onPress={() => router.push("/streaks" as never)}
+              style={({ pressed }) => [
+                styles.smallLink,
+                { opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <ThemedText type="defaultSemiBold">View history</ThemedText>
+            </Pressable>
+          </View>
+          <View style={styles.graphRow}>
+            {last7Days.map((day) => (
+              <View key={day.label} style={styles.graphItem}>
+                <View
+                  style={[
+                    styles.graphDot,
+                    day.completed && {
+                      backgroundColor: tint,
+                      borderColor: tint,
+                    },
+                  ]}
+                />
+                <ThemedText style={styles.graphLabel}>{day.label}</ThemedText>
+              </View>
+            ))}
+          </View>
+          <ThemedText type="defaultSemiBold" style={styles.streakSummary}>
             Current streak: {streakDays || 0} days
           </ThemedText>
           <ThemedText>
             {streakDays > 0
-              ? "Keep it up — you are doing great."
+              ? "Keep it up — your streak is tracked daily."
               : "Complete a workout today to start your streak."}
           </ThemedText>
         </ThemedView>
@@ -295,6 +371,36 @@ const styles = StyleSheet.create({
   centerText: {
     textAlign: "center",
   },
+  topCardsRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 8,
+  },
+  largeCard: {
+    flex: 1,
+    padding: 22,
+    borderRadius: 18,
+    minHeight: 120,
+    justifyContent: "center",
+  },
+  largeCardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 8,
+  },
+  largeCardSubtitle: {
+    color: "#ffffffcc",
+    fontSize: 13,
+  },
+  heroTitle: {
+    fontSize: 34,
+    fontWeight: "800",
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    opacity: 0.9,
+  },
   section: {
     gap: 14,
     marginBottom: 8,
@@ -315,6 +421,42 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
+  },
+  streakHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  smallLink: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  graphRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  graphItem: {
+    alignItems: "center",
+    gap: 6,
+  },
+  graphDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.35)",
+    backgroundColor: "transparent",
+  },
+  graphLabel: {
+    fontSize: 10,
+    opacity: 0.8,
+  },
+  streakSummary: {
+    marginBottom: 8,
   },
   actionsGrid: {
     flexDirection: "row",
