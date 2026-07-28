@@ -106,4 +106,8 @@ public class AiWorkoutController {
     public ResponseEntity<WorkoutPlan> getPlanById(@PathVariable Long id) {
         return ResponseEntity.ok(workoutService.getWorkoutPlanById(id));
     }
+
+    public CalendarService getCalendarService() {
+        short
+    }
 }
