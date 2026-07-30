@@ -2,6 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { router } from "expo-router";
 import { useState } from "react";
+import { requestPasswordReset } from "@/services/authService";
 import {
     Alert,
     KeyboardAvoidingView,
@@ -45,15 +46,15 @@ export default function ForgotPasswordScreen() {
     "tint",
   );
 
-  const handleResetRequest = async () => {
+const handleResetRequest = async () => {
     // 1. Basic validation
-    if (!email) {
+    if (!email.trim()) {
       Alert.alert("Error", "Please enter your email address.");
       return;
     }
 
     const emailRegex = /\S+@\S+\.\S+/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(email.trim())) {
       Alert.alert("Invalid Email", "Please enter a valid email address.");
       return;
     }
@@ -61,23 +62,33 @@ export default function ForgotPasswordScreen() {
     try {
       setIsLoading(true);
 
-      // 2. Mock API Call (Replace this with your actual backend/Firebase/Supabase auth call)
-      // await auth.sendPasswordResetEmail(email);
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulating network latency
+      // 2. Real API Call to Spring Boot
+      await requestPasswordReset(email.trim());
 
-      // 3. Success Feedback
+      // 3. Success Feedback — NOW ROUTE TO RESET PASSWORD SCREEN 🚀
       Alert.alert(
         "Reset Email Sent",
-        "Check your inbox for instructions to reset your password.",
+        "Check your inbox for your token, then tap 'Enter Token' to continue.",
         [
           {
-            text: "Back to Sign In",
-            onPress: () => router.replace("./signin"),
+            text: "Enter Token",
+            onPress: () =>
+              router.push({
+                pathname: "/resetPassword",
+                params: { email: email.trim() },
+              }),
           },
-        ],
+        ]
       );
-    } catch (error) {
-      Alert.alert("Error", "Something went wrong. Please try again later.");
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+
+      const errorMessage =
+        error?.response?.data?.message ||
+        (typeof error?.response?.data === "string" ? error.response.data : null) ||
+        "Something went wrong. Please try again later.";
+
+      Alert.alert("Error", errorMessage);
     } finally {
       setIsLoading(false);
     }

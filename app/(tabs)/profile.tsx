@@ -1,26 +1,62 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    TouchableOpacity,
-    View
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { getAllUsers } from "@/services/userService";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 
 export default function ProfileScreen() {
-  const { user, logout, notificationCount, clearNotifications } =
-    useAuthStore();
+  const { user, logout, notificationCount, updateProfile } = useAuthStore();
   const [showSettings, setShowSettings] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(true);
+
+  // Re-fetch user profile from backend on screen focus to reflect recent changes
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+
+      const fetchProfile = async () => {
+        if (!user?.email) return;
+
+        try {
+          const users = await getAllUsers();
+          const currentUserData = users.find(
+            (u) => u.email.toLowerCase() === user.email.toLowerCase()
+          );
+
+          if (currentUserData && isMounted) {
+            await updateProfile({
+              fullName: currentUserData.fullName,
+              displayName: currentUserData.fullName || currentUserData.displayName,
+              goal: currentUserData.goal,
+              level: currentUserData.level,
+              photoURL: currentUserData.photoURL,
+            });
+          }
+        } catch (error) {
+          console.error("Failed to fetch updated user profile:", error);
+        }
+      };
+
+      fetchProfile();
+
+      return () => {
+        isMounted = false;
+      };
+    }, [user?.email, updateProfile])
+  );
 
   const themeMode = useThemeStore((state) => state.mode);
   const setThemeMode = useThemeStore((state) => state.setMode);
@@ -51,12 +87,13 @@ export default function ProfileScreen() {
     "icon",
   );
 
-  const profileName = user?.displayName ?? "Guest User";
+  // Safely fallback to fullName or displayName
+  const profileName = user?.fullName || user?.displayName || "Guest User";
   const profileEmail = user?.email ?? "No email provided";
-  const profileGoal = user?.goal ?? "Set a goal";
-  const profileLevel = user?.level ?? "Set your level";
+  const profileGoal = user?.goal || "Set a goal";
+  const profileLevel = user?.level || "Set your level";
   const profileImage =
-    user?.photoURL ??
+    user?.photoURL ||
     "https://via.placeholder.com/120?text=" + encodeURIComponent(profileName);
 
   const toggleTheme = () => {
@@ -81,13 +118,14 @@ export default function ProfileScreen() {
           <IconSymbol size={24} name="bell.fill" color={buttonTextColor} />
           {notificationCount > 0 ? (
             <View style={styles.notificationBadge}>
-              <ThemedText type="caption" style={styles.notificationBadgeText}>
+              <ThemedText style={styles.notificationBadgeText}>
                 {notificationCount}
               </ThemedText>
             </View>
           ) : null}
         </TouchableOpacity>
       </View>
+
       <ThemedView style={[styles.profileCard, { backgroundColor: cardBg }]}>
         <View style={styles.profileImageContainer}>
           <Image source={{ uri: profileImage }} style={styles.profileImage} />
@@ -109,6 +147,7 @@ export default function ProfileScreen() {
           </View>
         </View>
       </ThemedView>
+
       <View style={styles.actionsSection}>
         <ThemedText type="subtitle">Account</ThemedText>
 
@@ -211,6 +250,7 @@ export default function ProfileScreen() {
           </ThemedView>
         )}
       </View>
+
       <TouchableOpacity
         style={[
           styles.logoutButton,

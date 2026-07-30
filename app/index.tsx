@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
+import { registerUser } from "@/services/authService";
 import {
   Alert,
   Image,
@@ -24,6 +25,7 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const backgroundColor = useThemeColor({}, "background");
   const inputBg = useThemeColor(
@@ -56,20 +58,20 @@ export default function SignupScreen() {
     "icon",
   );
 
-  const handleSignup = () => {
-    if (!fullName || !email || !password || !confirmPassword) {
+  const handleSignup = async () => {
+    if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
       Alert.alert("Missing Info", "Please fill all fields.");
       return;
     }
 
     const nameRegex = /^[a-zA-Z\s]+$/;
-    if (!nameRegex.test(fullName)) {
+    if (!nameRegex.test(fullName.trim())) {
       Alert.alert("Invalid Name", "Full name should contain letters only.");
       return;
     }
 
     const emailRegex = /\S+@\S+\.\S+/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(email.trim())) {
       Alert.alert("Invalid Email", "Enter a valid email address.");
       return;
     }
@@ -84,9 +86,38 @@ export default function SignupScreen() {
       return;
     }
 
-    // Navigate to verification step where we send a code to the user's email
-    // Use object form to avoid strict typed path issues in expo-router
-    router.push({ pathname: "/verify", params: { email } } as any);
+    setLoading(true);
+
+    try {
+      // registerUser returns a plain text string from Spring Boot
+      const response = await registerUser({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password: password.trim(),
+      });
+
+      // Display success/verification alert, then route to Sign In
+      Alert.alert(
+        "Account Created!",
+        response.message || "Please check your email to verify your account before logging in.",
+        [
+          {
+            text: "Go to Sign In",
+            onPress: () => router.push("./signin"),
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      Alert.alert(
+        "Registration Failed",
+        typeof error?.response?.data === "string"
+          ? error.response.data
+          : error?.response?.data?.message || "Could not create account. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -208,8 +239,14 @@ export default function SignupScreen() {
           </ThemedText>
         </Pressable>
 
-        <Pressable style={styles.button} onPress={handleSignup}>
-          <ThemedText style={styles.buttonText}>Create Account</ThemedText>
+        <Pressable
+          style={[styles.button, { opacity: loading ? 0.7 : 1 }]}
+          onPress={handleSignup}
+          disabled={loading}
+        >
+          <ThemedText style={styles.buttonText}>
+            {loading ? "Creating Account..." : "Create Account"}
+          </ThemedText>
         </Pressable>
 
         <View style={styles.bottomRow}>
@@ -228,13 +265,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
   scroll: {
     padding: 24,
     justifyContent: "center",
     flexGrow: 1,
   },
-
   title: {
     fontSize: 28,
     fontWeight: "700",
@@ -242,7 +277,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 8,
   },
-
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -250,50 +284,41 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
-
   logo: {
     width: 64,
     height: 64,
     resizeMode: "contain",
   },
-
   subtitle: {
     textAlign: "center",
     marginBottom: 30,
   },
-
   form: {
     gap: 12,
   },
-
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
   },
-
   input: {
     borderWidth: 1,
     padding: 14,
     borderRadius: 10,
   },
-
   inputWithButton: {
     flex: 1,
     marginRight: 8,
   },
-
   toggleButton: {
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-
   toggleText: {
     fontWeight: "600",
     fontSize: 13,
   },
-
   button: {
     backgroundColor: BLUE,
     padding: 16,
@@ -301,30 +326,25 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: "center",
   },
-
   buttonText: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
   },
-
   forgotPasswordContainer: {
     alignSelf: "flex-end",
     marginTop: 10,
   },
-
   forgotPasswordText: {
     fontSize: 14,
     textDecorationLine: "underline",
   },
-
   bottomRow: {
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 20,
     gap: 6,
   },
-
   link: {
     color: BLUE,
     fontWeight: "700",

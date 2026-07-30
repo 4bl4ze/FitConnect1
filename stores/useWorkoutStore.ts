@@ -23,11 +23,30 @@ interface WorkoutStore {
   lastCompletedAt: string | null;
   latestWorkout: CompletedWorkout | null;
   recentWorkouts: CompletedWorkout[];
+  ongoingWorkout: {
+    id: string;
+    title: string;
+    startedAt: string; // ISO
+    exercises: number;
+  } | null;
   plansByDay: Record<string, DailyPlan>;
+  completedDays: Record<string, boolean>;
+  stepsByDay: Record<string, number>;
+  trackingEnabledByDay: Record<string, boolean>;
   recordWorkout: (
     workout: Omit<CompletedWorkout, "id" | "completedAt">,
   ) => void;
+  setOngoingWorkout: (
+    w: {
+      id: string;
+      title: string;
+      startedAt: string;
+      exercises: number;
+    } | null,
+  ) => void;
   setPlanForDay: (dayKey: string, plan: Omit<DailyPlan, "updatedAt">) => void;
+  setDailySteps: (dayKey: string, steps: number) => void;
+  setTrackingEnabledForDay: (dayKey: string, enabled: boolean) => void;
 }
 
 export const useWorkoutStore = create<WorkoutStore>((set) => ({
@@ -37,6 +56,10 @@ export const useWorkoutStore = create<WorkoutStore>((set) => ({
   latestWorkout: null,
   recentWorkouts: [],
   plansByDay: {},
+  completedDays: {},
+  stepsByDay: {},
+  trackingEnabledByDay: {},
+  ongoingWorkout: null,
   recordWorkout: (workout) => {
     const completedAt = new Date().toISOString();
     const dayKey = completedAt.slice(0, 10);
@@ -73,9 +96,15 @@ export const useWorkoutStore = create<WorkoutStore>((set) => ({
         lastCompletedAt: dayKey,
         latestWorkout: completedWorkout,
         recentWorkouts: [completedWorkout, ...state.recentWorkouts].slice(0, 3),
+        completedDays: {
+          ...state.completedDays,
+          [dayKey]: true,
+        },
+        ongoingWorkout: null,
       };
     });
   },
+  setOngoingWorkout: (w) => set(() => ({ ongoingWorkout: w })),
   setPlanForDay: (dayKey, plan) => {
     set((state) => ({
       plansByDay: {
@@ -87,4 +116,18 @@ export const useWorkoutStore = create<WorkoutStore>((set) => ({
       },
     }));
   },
+  setDailySteps: (dayKey, steps) =>
+    set((state) => ({
+      stepsByDay: {
+        ...state.stepsByDay,
+        [dayKey]: steps,
+      },
+    })),
+  setTrackingEnabledForDay: (dayKey, enabled) =>
+    set((state) => ({
+      trackingEnabledByDay: {
+        ...state.trackingEnabledByDay,
+        [dayKey]: enabled,
+      },
+    })),
 }));

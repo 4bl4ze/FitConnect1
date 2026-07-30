@@ -1,38 +1,33 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    TextInput,
-    View,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
-
-type Message = {
-  id: string;
-  role: "user" | "buddy";
-  text: string;
-};
+import { ChatMessage, chatService } from "@/services/chatService";
 
 export default function BuddyChatScreen() {
-  const params = useLocalSearchParams<{ name?: string }>();
+  const params = useLocalSearchParams<{ name?: string; email?: string }>();
   const router = useRouter();
+
   const buddyName = params.name ?? "Buddy";
+  const otherUserEmail = params.email ?? ""; // Ensure email is passed in navigation params
 
   const [text, setText] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "buddy",
-      text: `Hey, I’m ${buddyName}. What’s your workout plan today?`,
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const flatListRef = useRef<FlatList<ChatMessage>>(null);
 
   const backgroundColor = useThemeColor({}, "background");
   const cardBg = useThemeColor(
@@ -57,28 +52,74 @@ export default function BuddyChatScreen() {
     "background",
   );
 
-  const sendMessage = () => {
-    if (!text.trim()) return;
+  // 1. Fetch Chat History & Connect to WebSocket
+  useEffect(() => {
+    let isMounted = true;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      text: text.trim(),
+    async function initializeChat() {
+      if (!otherUserEmail) {
+        console.warn("No user email provided for chat routing.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch historical messages REST
+        const history = await chatService.getChatHistory(otherUserEmail);
+        if (isMounted) {
+          setMessages(history);
+        }
+      } catch (error) {
+        console.error("Failed to fetch chat history:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+
+      // Connect to STOMP WebSocket for real-time incoming messages
+      await chatService.connect(
+        (incomingMessage) => {
+          // Verify message belongs to current active conversation
+          if (
+            incomingMessage.senderEmail === otherUserEmail ||
+            incomingMessage.receiverEmail === otherUserEmail
+          ) {
+            setMessages((prev) => [...prev, incomingMessage]);
+          }
+        },
+        (error) => console.error("WebSocket Error:", error),
+      );
+    }
+
+    initializeChat();
+
+    // Clean up connection when leaving the screen
+    return () => {
+      isMounted = false;
+      chatService.disconnect();
     };
+  }, [otherUserEmail]);
 
-    setMessages((prev) => [...prev, newMessage]);
+  // 2. Handle Sending Live Message
+  const sendMessage = () => {
+    if (!text.trim() || !otherUserEmail) return;
+
+    const messageText = text.trim();
     setText("");
 
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString() + "-reply",
-          role: "buddy",
-          text: `Nice, I’d help you build that routine.`,
-        },
-      ]);
-    }, 700);
+    const success = chatService.sendMessage(otherUserEmail, messageText);
+
+    if (success) {
+      // Optimistically append local message to list
+      const optimisticMsg: ChatMessage = {
+        id: Date.now().toString(),
+        receiverEmail: otherUserEmail,
+        content: messageText,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticMsg]);
+    } else {
+      console.warn("Failed to publish message over STOMP connection.");
+    }
   };
 
   const chatTitle = `Chat with ${buddyName}`;
@@ -97,32 +138,44 @@ export default function BuddyChatScreen() {
         <View style={{ width: 46 }} />
       </ThemedView>
 
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.messageList}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageBubble,
-              {
-                alignSelf: item.role === "user" ? "flex-end" : "flex-start",
-                backgroundColor:
-                  item.role === "user" ? userBubbleBg : buddyBubbleBg,
-              },
-            ]}
-          >
-            <ThemedText
-              style={[
-                styles.messageText,
-                { color: item.role === "user" ? "#FFFFFF" : textColor },
-              ]}
-            >
-              {item.text}
-            </ThemedText>
-          </View>
-        )}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item, index) => item.id ?? index.toString()}
+          contentContainerStyle={styles.messageList}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          renderItem={({ item }) => {
+            // Message is from the user if receiverEmail matches otherUserEmail
+            const isUser = item.receiverEmail === otherUserEmail;
+
+            return (
+              <View
+                style={[
+                  styles.messageBubble,
+                  {
+                    alignSelf: isUser ? "flex-end" : "flex-start",
+                    backgroundColor: isUser ? userBubbleBg : buddyBubbleBg,
+                  },
+                ]}
+              >
+                <ThemedText
+                  style={[
+                    styles.messageText,
+                    { color: isUser ? "#FFFFFF" : textColor },
+                  ]}
+                >
+                  {item.content}
+                </ThemedText>
+              </View>
+            );
+          }}
+        />
+      )}
 
       <View style={[styles.inputRow, { backgroundColor: cardBg }]}>
         <TextInput
@@ -166,6 +219,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(0,0,0,0.08)",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   messageList: {
     flexGrow: 1,

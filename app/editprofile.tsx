@@ -2,25 +2,26 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { updateUser } from "@/services/userService";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function EditProfileScreen() {
   const { user, updateProfile } = useAuthStore();
-  const [name, setName] = useState(user?.displayName ?? "");
+  const [name, setName] = useState(user?.displayName ?? user?.fullName ?? "");
   const [goal, setGoal] = useState(user?.goal ?? "");
   const [level, setLevel] = useState(user?.level ?? "");
   const [photoURL, setPhotoURL] = useState(user?.photoURL ?? "");
@@ -72,20 +73,32 @@ export default function EditProfileScreen() {
       return;
     }
 
+    if (!user?.email) {
+      Alert.alert("Error", "User session email not found. Please log in again.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await updateProfile({
+      const updatedData = {
+        fullName: name.trim(),
         displayName: name.trim(),
         goal: goal.trim(),
         level: level.trim(),
         photoURL,
-      });
+      };
 
-      Alert.alert("Success", "Profile updated!");
+      // 1. Persist changes to PostgreSQL via Spring Boot
+      await updateUser(user.email, updatedData);
+
+      // 2. Sync changes locally in Zustand state store
+      await updateProfile(updatedData);
+
+      Alert.alert("Success", "Profile updated successfully!");
       router.replace("/(tabs)/profile");
     } catch (error) {
-      Alert.alert("Error", "Failed to update profile. Please try again.");
-      console.warn(error);
+      console.error("Profile update failed:", error);
+      Alert.alert("Error", "Failed to update profile on backend database. Please try again.");
     } finally {
       setLoading(false);
     }

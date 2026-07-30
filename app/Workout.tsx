@@ -1,5 +1,7 @@
+import { useAudioPlayer } from "expo-audio";
+import { createWorkout } from "@/services/workoutService";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     Alert,
     FlatList,
@@ -19,6 +21,7 @@ type Exercise = {
   name: string;
   sets: number;
   reps: number;
+  weight?: number;
 };
 
 export default function StartWorkout() {
@@ -32,7 +35,13 @@ export default function StartWorkout() {
 
   const [exerciseName, setExerciseName] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const alarmPlayedRef = useRef(false);
+  const autoRecordedRef = useRef(false);
+  const workoutAlarmPlayer = useAudioPlayer(
+    require("../assets/audio/timer-alarm.mp3"),
+  );
   const recordWorkout = useWorkoutStore((state) => state.recordWorkout);
+  const setOngoingWorkout = useWorkoutStore((state) => state.setOngoingWorkout);
 
   const screenBg = useThemeColor(
     { light: "#F8FAFC", dark: "#0F172A" },
@@ -77,6 +86,34 @@ export default function StartWorkout() {
 
   const durationTotalSeconds = durationMinutes * 60 + durationSeconds;
 
+  const stopTimerAlarm = useCallback(() => {
+    workoutAlarmPlayer.pause();
+    workoutAlarmPlayer.seekTo(0);
+  }, [workoutAlarmPlayer]);
+
+  const triggerTimerAlarm = useCallback(() => {
+    try {
+      workoutAlarmPlayer.seekTo(0);
+      workoutAlarmPlayer.play();
+    } catch (error) {
+      console.warn("Could not play workout timer alarm:", error);
+    }
+
+    Alert.alert(
+      "Workout Complete ⏰",
+      "Your workout timer has reached zero.",
+      [
+        {
+          text: "Stop Alarm",
+          onPress: () => {
+            stopTimerAlarm();
+          },
+        },
+      ],
+      { cancelable: false },
+    );
+  }, [stopTimerAlarm, workoutAlarmPlayer]);
+
   useEffect(() => {
     if (!isRunning || seconds <= 0) return;
 
@@ -85,6 +122,32 @@ export default function StartWorkout() {
         if (prev <= 1) {
           clearInterval(interval);
           setIsRunning(false);
+
+          if (!alarmPlayedRef.current) {
+            alarmPlayedRef.current = true;
+            triggerTimerAlarm();
+
+            // Auto-record the workout when timer naturally reaches zero
+            if (!autoRecordedRef.current && exercises.length > 0) {
+              autoRecordedRef.current = true;
+
+              const elapsedSeconds = durationTotalSeconds; // full duration reached
+
+              recordWorkout({
+                title:
+                  exercises.length > 0
+                    ? exercises[0].name
+                    : "Full body workout",
+                durationMinutes: parseFloat((elapsedSeconds / 60).toFixed(2)),
+                calories: Math.max(
+                  180,
+                  exercises.length * 80 + Math.round(elapsedSeconds / 20),
+                ),
+                exercises: exercises.length,
+              });
+            }
+          }
+
           return 0;
         }
 
@@ -93,7 +156,7 @@ export default function StartWorkout() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, seconds]);
+  }, [isRunning, seconds, triggerTimerAlarm]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -115,6 +178,7 @@ export default function StartWorkout() {
       name: exerciseName,
       sets: 3,
       reps: 10,
+      weight: 0
     };
 
     setExercises((prev) => [...prev, newExercise]);
@@ -146,29 +210,88 @@ export default function StartWorkout() {
     );
   };
 
-  const finishWorkout = () => {
+
+// 1. Add this state at the top of your component:
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+// 2. Updated finishWorkout handler:
+const finishWorkout = async () => {
+    if (isSubmitting) return;
+
     setIsRunning(false);
+    stopTimerAlarm();
+    alarmPlayedRef.current = false;
 
     const elapsedSeconds = Math.max(0, durationTotalSeconds - seconds);
+    const calculatedDuration = Math.max(1, Math.round(elapsedSeconds / 60));
+    const workoutTitle = exercises.length > 0 ? exercises[0].name : "Full Body Workout";
 
-    recordWorkout({
-      title: exercises.length > 0 ? exercises[0].name : "Full body workout",
-      durationMinutes: Math.max(1, Math.round(elapsedSeconds / 60)),
-      calories: Math.max(
-        180,
-        exercises.length * 80 + Math.round(elapsedSeconds / 20),
-      ),
-      exercises: exercises.length,
-    });
+    try {
+      setIsSubmitting(true);
 
-    Alert.alert(
-      "Workout Complete 🎉",
-      `Time: ${formatTime(elapsedSeconds)}\nExercises: ${exercises.length}`,
-    );
+      // Prepare list to save (fallback to 1 default if list is empty)
+      const exerciseListToSave =
+        exercises.length > 0
+          ? exercises
+          : [
+              {
+                id: "default",
+                name: "Full Body Workout",
+                sets: 1,
+                reps: 10,
+                weight: 0,
+              },
+            ];
 
-    router.back();
+      // Save each exercise entry with fields matching Workout.java
+      const savePromises = exerciseListToSave.map((ex) => {
+        const payload = {
+          exerciseName: ex.name || "General Exercise",
+          sets: Math.max(1, Number(ex.sets) || 1), // Enforces @Min(1)
+          reps: Math.max(1, Number(ex.reps) || 1), // Enforces @Min(1)
+          weight: Number(ex.weight) || 0.0,
+        };
+        return createWorkout(payload);
+      });
+
+      await Promise.all(savePromises);
+
+      // Local state update in Zustand
+      recordWorkout({
+        title: workoutTitle,
+        durationMinutes: calculatedDuration,
+        calories: Math.max(
+          180,
+          exercises.length * 80 + Math.round(elapsedSeconds / 20)
+        ),
+        exercises: exercises.length,
+      });
+
+      Alert.alert(
+        "Workout Complete 🎉",
+        `Time: ${formatTime(elapsedSeconds)}\nExercises: ${exerciseListToSave.length}`,
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(tabs)"),
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error("Failed to save workout to Spring Boot:", error);
+
+      Alert.alert(
+        "Save Failed ⚠️",
+        "Could not save workout to the server. Please check your network connection or server status."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+
+
+  
   const removeWorkout = () => {
     Alert.alert(
       "Delete Workout",
@@ -182,6 +305,8 @@ export default function StartWorkout() {
             setExercises([]);
             setIsRunning(false);
             setSeconds(0);
+            setOngoingWorkout(null);
+            autoRecordedRef.current = false;
           },
         },
       ],
@@ -225,6 +350,8 @@ export default function StartWorkout() {
           ]}
           onPress={() => {
             setIsRunning(false);
+            alarmPlayedRef.current = false;
+            stopTimerAlarm();
             setIsEditingDuration((prev) => !prev);
             setSeconds(durationTotalSeconds);
           }}
@@ -307,7 +434,18 @@ export default function StartWorkout() {
               if (seconds === 0) {
                 setSeconds(durationTotalSeconds);
               }
+              alarmPlayedRef.current = false;
+              stopTimerAlarm();
+              autoRecordedRef.current = false;
               setIsRunning(true);
+              if (exercises.length > 0) {
+                setOngoingWorkout({
+                  id: Date.now().toString(),
+                  title: exercises[0].name ?? "Workout",
+                  startedAt: new Date().toISOString(),
+                  exercises: exercises.length,
+                });
+              }
             }}
           >
             <ThemedText style={styles.whiteText}>Start</ThemedText>
@@ -315,7 +453,10 @@ export default function StartWorkout() {
 
           <Pressable
             style={styles.lightBtn}
-            onPress={() => setIsRunning(false)}
+            onPress={() => {
+              setIsRunning(false);
+              stopTimerAlarm();
+            }}
           >
             <ThemedText style={styles.blueText}>Pause</ThemedText>
           </Pressable>
@@ -324,7 +465,12 @@ export default function StartWorkout() {
             style={styles.redBtn}
             onPress={() => {
               setIsRunning(false);
+              alarmPlayedRef.current = false;
+              stopTimerAlarm();
               setSeconds(durationTotalSeconds);
+              // clear ongoing workout when reset
+              setOngoingWorkout(null);
+              autoRecordedRef.current = false;
             }}
           >
             <ThemedText style={styles.whiteText}>Reset</ThemedText>
@@ -626,3 +772,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,10 +1,11 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { getUserCalendar, ScheduledWorkout } from "@/services/calendarService";
 import { useWorkoutStore } from "@/stores/useWorkoutStore";
 
 export default function PlanScreen() {
@@ -24,6 +25,29 @@ export default function PlanScreen() {
   const [exercises, setExercises] = useState(
     currentPlan?.exercises?.toString() ?? "6",
   );
+  const [loading, setLoading] = useState(true);
+
+  // Fetch calendar plan from Spring Boot API on mount
+  useEffect(() => {
+    const fetchTodaySchedule = async () => {
+      try {
+        const userId = 1; // Replace with dynamic active user ID if available
+        const schedule = await getUserCalendar(userId, dayKey, dayKey);
+
+        if (schedule && schedule.length > 0) {
+          const todayWorkout: ScheduledWorkout = schedule[0];
+          if (todayWorkout.workoutName) setTitle(todayWorkout.workoutName);
+          if (todayWorkout.notes) setDescription(todayWorkout.notes);
+        }
+      } catch (error) {
+        console.log("Could not load backend schedule, falling back to store:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTodaySchedule();
+  }, [dayKey]);
 
   const screenBg = useThemeColor(
     { light: "#F8FAFC", dark: "#0F172A" },
@@ -73,47 +97,53 @@ export default function PlanScreen() {
       >
         <ThemedText type="subtitle">Plan details</ThemedText>
 
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Plan title"
-          placeholderTextColor={mutedTextColor}
-          style={[styles.input, { borderColor, color: textColor }]}
-        />
+        {loading ? (
+          <ActivityIndicator size="small" color={buttonBg} style={{ marginVertical: 20 }} />
+        ) : (
+          <>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Plan title"
+              placeholderTextColor={mutedTextColor}
+              style={[styles.input, { borderColor, color: textColor }]}
+            />
 
-        <TextInput
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Short description"
-          placeholderTextColor={mutedTextColor}
-          style={[styles.input, { borderColor, color: textColor }]}
-        />
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Short description"
+              placeholderTextColor={mutedTextColor}
+              style={[styles.input, { borderColor, color: textColor }]}
+            />
 
-        <View style={styles.row}>
-          <TextInput
-            value={duration}
-            onChangeText={setDuration}
-            keyboardType="numeric"
-            placeholder="45"
-            placeholderTextColor={mutedTextColor}
-            style={[styles.smallInput, { borderColor, color: textColor }]}
-          />
-          <TextInput
-            value={exercises}
-            onChangeText={setExercises}
-            keyboardType="numeric"
-            placeholder="6"
-            placeholderTextColor={mutedTextColor}
-            style={[styles.smallInput, { borderColor, color: textColor }]}
-          />
-        </View>
+            <View style={styles.row}>
+              <TextInput
+                value={duration}
+                onChangeText={setDuration}
+                keyboardType="numeric"
+                placeholder="45"
+                placeholderTextColor={mutedTextColor}
+                style={[styles.smallInput, { borderColor, color: textColor }]}
+              />
+              <TextInput
+                value={exercises}
+                onChangeText={setExercises}
+                keyboardType="numeric"
+                placeholder="6"
+                placeholderTextColor={mutedTextColor}
+                style={[styles.smallInput, { borderColor, color: textColor }]}
+              />
+            </View>
 
-        <Pressable
-          style={[styles.saveBtn, { backgroundColor: buttonBg }]}
-          onPress={savePlan}
-        >
-          <ThemedText style={styles.saveText}>Save plan</ThemedText>
-        </Pressable>
+            <Pressable
+              style={[styles.saveBtn, { backgroundColor: buttonBg }]}
+              onPress={savePlan}
+            >
+              <ThemedText style={styles.saveText}>Save plan</ThemedText>
+            </Pressable>
+          </>
+        )}
       </ThemedView>
     </ThemedView>
   );
