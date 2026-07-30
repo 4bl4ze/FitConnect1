@@ -6,7 +6,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
-type Plan = "Basic" | "Monthly Pro Plan" | "Annual Pro Plan";
+type Plan = "Basic" | "Monthly Pro Plan (GHs 30)" | "Annual Pro Plan (GHs 250)";
 
 const plans: { id: Plan; title: string; description: string }[] = [
   {
