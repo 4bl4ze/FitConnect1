@@ -2,7 +2,7 @@ package com.fitconnect.backend.controller;
 
 import com.fitconnect.backend.dto.AiWorkoutRequest;
 import com.fitconnect.backend.model.WorkoutPlan;
-import com.fitconnect.backend.service.CalendarService; // Added
+import com.fitconnect.backend.service.CalendarService;
 import com.fitconnect.backend.service.FitnessAiService;
 import com.fitconnect.backend.service.WorkoutService;
 import jakarta.validation.Valid;
@@ -22,7 +22,7 @@ public class AiWorkoutController {
 
     private final FitnessAiService fitnessAiService;
     private final WorkoutService workoutService;
-    private final CalendarService calendarService; // Injected
+    private final CalendarService calendarService;
 
     // --- GENERATION ENDPOINT ---
     @PostMapping
@@ -31,7 +31,7 @@ public class AiWorkoutController {
             @RequestParam(value = "userId", required = false) Long manualUserId,
             Principal principal) {
 
-        // 1. Identify User from Principal (Consistent with analysis endpoint)
+        // 1. Identify User from Principal
         Long userId = extractUserIdFromPrincipal(principal);
 
         // Fallback to Postman input if Principal is null
@@ -105,9 +105,5 @@ public class AiWorkoutController {
     @GetMapping("/{id}")
     public ResponseEntity<WorkoutPlan> getPlanById(@PathVariable Long id) {
         return ResponseEntity.ok(workoutService.getWorkoutPlanById(id));
-    }
-
-    public CalendarService getCalendarService() {
-        short
     }
 }
