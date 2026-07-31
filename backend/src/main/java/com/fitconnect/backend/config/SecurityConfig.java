@@ -34,8 +34,18 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ADDED "/api/ai/workouts/**" here so Postman can access it without a JWT token
-                        .requestMatchers("/api/auth/**", "/error", "/ws/**", "/api/ai/workouts/**").permitAll()
+                        // Kept all existing routes and ADDED root '/', Swagger UI, & OpenAPI endpoints
+                        .requestMatchers(
+                                "/",
+                                "/api/auth/**",
+                                "/error",
+                                "/ws/**",
+                                "/api/ai/workouts/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
