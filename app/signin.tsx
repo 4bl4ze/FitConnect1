@@ -1,15 +1,17 @@
+import { loginUser } from "@/services/authService";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { loginUser } from "@/services/authService";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -19,6 +21,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 export default function SignInScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const setUser = useAuthStore((state) => state.setUser);
@@ -43,7 +46,7 @@ export default function SignInScreen() {
   );
   const buttonBg = useThemeColor({ light: "#2563EB", dark: "#3B82F6" }, "tint");
 
-const handleSignIn = async () => {
+  const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert("Sign in error", "Please enter both email and password.");
       return;
@@ -72,7 +75,8 @@ const handleSignIn = async () => {
       console.error("Login failed:", error);
       Alert.alert(
         "Sign in failed",
-        error?.response?.data?.message || "Invalid email or password. Please try again."
+        error?.response?.data?.message ||
+          "Invalid email or password. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -89,6 +93,16 @@ const handleSignIn = async () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.topRow}>
+          <TouchableOpacity
+            onPress={() => router.push("/" as never)}
+            style={styles.backButton}
+          >
+            <ThemedText style={styles.backButtonText}>
+              {"< Back to signup"}
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
         <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
           <ThemedText type="title">Sign In</ThemedText>
           <ThemedText style={styles.subtitle}>
@@ -110,19 +124,35 @@ const handleSignIn = async () => {
             returnKeyType="next"
           />
 
-          <TextInput
-            style={[
-              styles.input,
-              { backgroundColor: inputBg, borderColor, color: textColor },
-            ]}
-            placeholder="Password"
-            placeholderTextColor={placeholderColor}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            returnKeyType="done"
-            onSubmitEditing={handleSignIn}
-          />
+          <View style={styles.inputRow}>
+            <TextInput
+              style={[
+                styles.input,
+                styles.inputWithButton,
+                { backgroundColor: inputBg, borderColor, color: textColor },
+              ]}
+              placeholder="Password"
+              placeholderTextColor={placeholderColor}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              returnKeyType="done"
+              onSubmitEditing={handleSignIn}
+            />
+            <Pressable
+              style={[
+                styles.toggleIconButton,
+                { borderColor, backgroundColor: inputBg },
+              ]}
+              onPress={() => setShowPassword((value) => !value)}
+            >
+              <MaterialIcons
+                name={showPassword ? "visibility" : "visibility-off"}
+                size={22}
+                color={textColor}
+              />
+            </Pressable>
+          </View>
 
           <TouchableOpacity
             style={[
@@ -186,6 +216,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
   },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  inputWithButton: {
+    flex: 1,
+    marginRight: 8,
+  },
+  toggleIconButton: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   button: {
     height: 52,
     borderRadius: 14,
@@ -203,6 +248,20 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   secondaryText: {
+    color: "#2563EB",
+    fontWeight: "600",
+  },
+  topRow: {
+    marginBottom: 16,
+  },
+  backButton: {
+    alignSelf: "flex-start",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: "rgba(37,99,235,0.1)",
+  },
+  backButtonText: {
     color: "#2563EB",
     fontWeight: "600",
   },

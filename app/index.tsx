@@ -1,16 +1,17 @@
+import { registerUser } from "@/services/authService";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { registerUser } from "@/services/authService";
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -99,13 +100,14 @@ export default function SignupScreen() {
       // Display success/verification alert, then route to Sign In
       Alert.alert(
         "Account Created!",
-        response.message || "Please check your email to verify your account before logging in.",
+        response.message ||
+          "Please check your email to verify your account before logging in.",
         [
           {
             text: "Go to Sign In",
             onPress: () => router.push("./signin"),
           },
-        ]
+        ],
       );
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -113,7 +115,8 @@ export default function SignupScreen() {
         "Registration Failed",
         typeof error?.response?.data === "string"
           ? error.response.data
-          : error?.response?.data?.message || "Could not create account. Please try again."
+          : error?.response?.data?.message ||
+              "Could not create account. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -185,16 +188,16 @@ export default function SignupScreen() {
 
             <Pressable
               style={[
-                styles.toggleButton,
+                styles.toggleIconButton,
                 { borderColor, backgroundColor: toggleBg },
               ]}
               onPress={() => setShowPassword((value) => !value)}
             >
-              <ThemedText
-                style={[styles.toggleText, { color: toggleTextColor }]}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </ThemedText>
+              <MaterialIcons
+                name={showPassword ? "visibility" : "visibility-off"}
+                size={22}
+                color={toggleTextColor}
+              />
             </Pressable>
           </View>
 
@@ -214,16 +217,16 @@ export default function SignupScreen() {
 
             <Pressable
               style={[
-                styles.toggleButton,
+                styles.toggleIconButton,
                 { borderColor, backgroundColor: toggleBg },
               ]}
               onPress={() => setShowConfirmPassword((value) => !value)}
             >
-              <ThemedText
-                style={[styles.toggleText, { color: toggleTextColor }]}
-              >
-                {showConfirmPassword ? "Hide" : "Show"}
-              </ThemedText>
+              <MaterialIcons
+                name={showConfirmPassword ? "visibility" : "visibility-off"}
+                size={22}
+                color={toggleTextColor}
+              />
             </Pressable>
           </View>
         </View>
@@ -304,6 +307,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     borderRadius: 10,
+  },
+  inputWithButton: {
+    flex: 1,
+    marginRight: 8,
+  },
+  toggleIconButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   inputWithButton: {
     flex: 1,

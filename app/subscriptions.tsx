@@ -1,12 +1,12 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { 
-  ActivityIndicator, 
-  Alert, 
-  Linking, 
-  Pressable, 
-  StyleSheet, 
-  View 
+import {
+    ActivityIndicator,
+    Alert,
+    Linking,
+    Pressable,
+    StyleSheet,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -14,11 +14,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { initializePayment } from "@/services/paymentService";
 
-<<<<<<< HEAD
-type Plan = "Basic" | "Monthly Pro Plan (GHs 30)" | "Annual Pro Plan (GHs 250)";
-=======
 type PlanId = "basic" | "monthly" | "annual";
->>>>>>> 9416b65ff671e940e9b1d436f362a11b9121b7df
 
 interface Plan {
   id: PlanId;
@@ -83,11 +79,17 @@ export default function SubscriptionScreen() {
           Alert.alert("Error", "Unable to open checkout URL on this device.");
         }
       } else {
-        Alert.alert("Payment Error", "Failed to retrieve checkout link from server.");
+        Alert.alert(
+          "Payment Error",
+          "Failed to retrieve checkout link from server.",
+        );
       }
     } catch (error) {
       console.error("Payment initialization failed:", error);
-      Alert.alert("Connection Error", "Could not connect to the payment server. Make sure your Spring Boot backend is running.");
+      Alert.alert(
+        "Connection Error",
+        "Could not connect to the payment server. Make sure your Spring Boot backend is running.",
+      );
     } finally {
       setLoading(false);
     }
@@ -115,7 +117,8 @@ export default function SubscriptionScreen() {
               styles.card,
               {
                 backgroundColor: cardBg,
-                borderColor: selectedPlan.id === plan.id ? "#007AFF" : "#D1D5DB",
+                borderColor:
+                  selectedPlan.id === plan.id ? "#007AFF" : "#D1D5DB",
               },
             ]}
           >
@@ -125,8 +128,8 @@ export default function SubscriptionScreen() {
         ))}
       </View>
 
-      <Pressable 
-        style={[styles.primaryButton, loading && styles.disabledButton]} 
+      <Pressable
+        style={[styles.primaryButton, loading && styles.disabledButton]}
         onPress={subscribe}
         disabled={loading}
       >
@@ -134,7 +137,9 @@ export default function SubscriptionScreen() {
           <ActivityIndicator color="#FFFFFF" />
         ) : (
           <ThemedText style={styles.buttonText}>
-            {selectedPlan.amount === 0 ? "Select Basic Plan" : `Subscribe (${selectedPlan.title})`}
+            {selectedPlan.amount === 0
+              ? "Select Basic Plan"
+              : `Subscribe (${selectedPlan.title})`}
           </ThemedText>
         )}
       </Pressable>
