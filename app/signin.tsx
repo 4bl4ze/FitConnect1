@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { loginUser } from "@/services/authService";
+import { loginUser, type LoginRequest } from "@/services/authService";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -43,37 +43,47 @@ export default function SignInScreen() {
   );
   const buttonBg = useThemeColor({ light: "#2563EB", dark: "#3B82F6" }, "tint");
 
-const handleSignIn = async () => {
-    if (!email.trim() || !password.trim()) {
+  const handleSignIn = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.trim();
+
+    if (!normalizedEmail || !normalizedPassword) {
       Alert.alert("Sign in error", "Please enter both email and password.");
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Send credentials to Spring Boot API
-      const response = await loginUser({
-        email: email.trim(),
-        password: password.trim(),
-      });
+      const payload: LoginRequest = {
+        email: normalizedEmail,
+        password: normalizedPassword,
+        fullName: normalizedEmail.split("@")[0] || "FitConnect User",
+      };
 
-      // 2. Save session details to Zustand store
+      const response = await loginUser(payload);
+
       setUser({
-        id: email.trim().toLowerCase(),
-        email: email.trim(),
-        displayName: email.trim().split("@")[0],
+        id: normalizedEmail,
+        email: normalizedEmail,
+        displayName: normalizedEmail.split("@")[0] || "FitConnect User",
         level: "Beginner",
-        token: response.token, // Store JWT token if your user type supports it
+        token: response.token,
       });
 
-      // 3. Navigate to main tab navigator
       router.replace("/(tabs)");
     } catch (error: any) {
       console.error("Login failed:", error);
-      Alert.alert(
-        "Sign in failed",
-        error?.response?.data?.message || "Invalid email or password. Please try again."
-      );
+
+      let errorMessage = "Invalid email or password. Please try again.";
+      if (typeof error?.response?.data === "string") {
+        errorMessage = error.response.data;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert("Sign in failed", errorMessage);
     } finally {
       setLoading(false);
     }
