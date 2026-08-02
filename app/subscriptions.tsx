@@ -14,11 +14,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { initializePayment } from "@/services/paymentService";
 
-<<<<<<< HEAD
-type Plan = "Basic" | "Monthly Pro Plan (GHs 30)" | "Annual Pro Plan (GHs 250)";
-=======
 type PlanId = "basic" | "monthly" | "annual";
->>>>>>> 9416b65ff671e940e9b1d436f362a11b9121b7df
 
 interface Plan {
   id: PlanId;
