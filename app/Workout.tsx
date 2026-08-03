@@ -1,5 +1,6 @@
-import { useAudioPlayer } from "expo-audio";
 import { createWorkout } from "@/services/workoutService";
+import { Ionicons } from "@expo/vector-icons";
+import { useAudioPlayer } from "expo-audio";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -22,6 +23,30 @@ type Exercise = {
   sets: number;
   reps: number;
   weight?: number;
+};
+
+const getExerciseIconName = (name: string) => {
+  const normalized = name.trim().toLowerCase();
+
+  if (normalized.includes("push")) return "barbell";
+  if (normalized.includes("leg raise") || normalized.includes("leg raises"))
+    return "walk";
+  if (normalized.includes("squat")) return "walk";
+  if (normalized.includes("bench")) return "barbell";
+  if (normalized.includes("plank")) return "fitness";
+  if (normalized.includes("deadlift")) return "barbell";
+  if (normalized.includes("curl")) return "fitness";
+  if (normalized.includes("lunge")) return "walk";
+  if (normalized.includes("crunch")) return "fitness";
+  if (
+    normalized.includes("pull-up") ||
+    normalized.includes("pull up") ||
+    normalized.includes("chin-up") ||
+    normalized.includes("chin up")
+  )
+    return "body";
+
+  return "fitness";
 };
 
 export default function StartWorkout() {
@@ -83,6 +108,7 @@ export default function StartWorkout() {
     { light: "#2563EB", dark: "#60A5FA" },
     "tint",
   );
+  const exerciseIconColor = timerBorderColor;
 
   const durationTotalSeconds = durationMinutes * 60 + durationSeconds;
 
@@ -178,7 +204,7 @@ export default function StartWorkout() {
       name: exerciseName,
       sets: 3,
       reps: 10,
-      weight: 0
+      weight: 0,
     };
 
     setExercises((prev) => [...prev, newExercise]);
@@ -210,12 +236,11 @@ export default function StartWorkout() {
     );
   };
 
+  // 1. Add this state at the top of your component:
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-// 1. Add this state at the top of your component:
-const [isSubmitting, setIsSubmitting] = useState(false);
-
-// 2. Updated finishWorkout handler:
-const finishWorkout = async () => {
+  // 2. Updated finishWorkout handler:
+  const finishWorkout = async () => {
     if (isSubmitting) return;
 
     setIsRunning(false);
@@ -224,7 +249,8 @@ const finishWorkout = async () => {
 
     const elapsedSeconds = Math.max(0, durationTotalSeconds - seconds);
     const calculatedDuration = Math.max(1, Math.round(elapsedSeconds / 60));
-    const workoutTitle = exercises.length > 0 ? exercises[0].name : "Full Body Workout";
+    const workoutTitle =
+      exercises.length > 0 ? exercises[0].name : "Full Body Workout";
 
     try {
       setIsSubmitting(true);
@@ -262,7 +288,7 @@ const finishWorkout = async () => {
         durationMinutes: calculatedDuration,
         calories: Math.max(
           180,
-          exercises.length * 80 + Math.round(elapsedSeconds / 20)
+          exercises.length * 80 + Math.round(elapsedSeconds / 20),
         ),
         exercises: exercises.length,
       });
@@ -275,23 +301,20 @@ const finishWorkout = async () => {
             text: "OK",
             onPress: () => router.replace("/(tabs)"),
           },
-        ]
+        ],
       );
     } catch (error: any) {
       console.error("Failed to save workout to Spring Boot:", error);
 
       Alert.alert(
         "Save Failed ⚠️",
-        "Could not save workout to the server. Please check your network connection or server status."
+        "Could not save workout to the server. Please check your network connection or server status.",
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-
-
-  
   const removeWorkout = () => {
     Alert.alert(
       "Delete Workout",
@@ -506,7 +529,33 @@ const finishWorkout = async () => {
               { backgroundColor: cardBg, borderColor },
             ]}
           >
-            <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
+            <View style={styles.exerciseHeader}>
+              <View
+                style={[
+                  styles.exerciseIconWrap,
+                  { backgroundColor: surfaceBg, borderColor },
+                ]}
+              >
+                <Ionicons
+                  name={getExerciseIconName(item.name)}
+                  size={28}
+                  color={exerciseIconColor}
+                />
+              </View>
+
+              <View style={styles.exerciseHeaderText}>
+                <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
+                <ThemedText style={styles.exerciseSubtitle}>
+                  {item.sets} sets × {item.reps} reps
+                </ThemedText>
+              </View>
+
+              <Pressable
+                onPress={() => confirmRemoveExercise(item.id, item.name)}
+              >
+                <ThemedText style={styles.redText}>Remove</ThemedText>
+              </Pressable>
+            </View>
 
             <View style={styles.row}>
               <View style={styles.controlGroup}>
@@ -552,17 +601,7 @@ const finishWorkout = async () => {
 
                 <ThemedText style={{ marginLeft: 8 }}>reps</ThemedText>
               </View>
-
-              <Pressable
-                onPress={() => confirmRemoveExercise(item.id, item.name)}
-              >
-                <ThemedText style={styles.redText}>Remove</ThemedText>
-              </Pressable>
             </View>
-
-            <ThemedText>
-              {item.sets} sets × {item.reps} reps
-            </ThemedText>
           </View>
         )}
       />
@@ -695,7 +734,32 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     borderWidth: 1,
-    gap: 6,
+    gap: 12,
+  },
+
+  exerciseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    justifyContent: "space-between",
+  },
+
+  exerciseIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  exerciseHeaderText: {
+    flex: 1,
+  },
+
+  exerciseSubtitle: {
+    color: "#64748B",
+    marginTop: 2,
   },
 
   row: {
@@ -772,26 +836,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

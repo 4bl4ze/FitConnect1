@@ -3,21 +3,19 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { useThemeColor } from "@/hooks/use-theme-color";
-
-const BLUE = "#2563EB";
 
 export default function SignupScreen() {
   const [fullName, setFullName] = useState("");
@@ -38,11 +36,11 @@ export default function SignupScreen() {
     "icon",
   );
   const textColor = useThemeColor({}, "text");
-  const placeholderColor = useThemeColor(
+  const subtitleColor = useThemeColor(
     { light: "#6B7280", dark: "#D1D5DB" },
     "icon",
   );
-  const subtitleColor = useThemeColor(
+  const placeholderColor = useThemeColor(
     { light: "#6B7280", dark: "#D1D5DB" },
     "icon",
   );
@@ -58,6 +56,12 @@ export default function SignupScreen() {
     { light: "#6B7280", dark: "#9CA3AF" },
     "icon",
   );
+  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#60A5FA" }, "tint");
+  const linkColor = useThemeColor(
+    { light: "#2563EB", dark: "#60A5FA" },
+    "tint",
+  );
+  const titleColor = useThemeColor({}, "text");
 
   const handleSignup = async () => {
     if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
@@ -138,7 +142,10 @@ export default function SignupScreen() {
             source={require("../assets/images/icon.png")}
             style={styles.logo}
           />
-          <ThemedText type="title" style={styles.title}>
+          <ThemedText
+            type="title"
+            style={[styles.title, { color: titleColor }]}
+          >
             Join FitConnect
           </ThemedText>
         </View>
@@ -243,7 +250,10 @@ export default function SignupScreen() {
         </Pressable>
 
         <Pressable
-          style={[styles.button, { opacity: loading ? 0.7 : 1 }]}
+          style={[
+            styles.button,
+            { backgroundColor: buttonBg, opacity: loading ? 0.7 : 1 },
+          ]}
           onPress={handleSignup}
           disabled={loading}
         >
@@ -253,10 +263,14 @@ export default function SignupScreen() {
         </Pressable>
 
         <View style={styles.bottomRow}>
-          <ThemedText>Already have an account?</ThemedText>
+          <ThemedText style={{ color: textColor }}>
+            Already have an account?
+          </ThemedText>
 
           <Pressable onPress={() => router.push("./signin")}>
-            <ThemedText style={styles.link}>Sign In</ThemedText>
+            <ThemedText style={[styles.link, { color: linkColor }]}>
+              Sign In
+            </ThemedText>
           </Pressable>
         </View>
       </ScrollView>
@@ -276,7 +290,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: BLUE,
     textAlign: "center",
     marginBottom: 8,
   },
@@ -319,10 +332,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  inputWithButton: {
-    flex: 1,
-    marginRight: 8,
-  },
   toggleButton: {
     borderWidth: 1,
     borderRadius: 10,
@@ -334,7 +343,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   button: {
-    backgroundColor: BLUE,
     padding: 16,
     borderRadius: 10,
     marginTop: 20,
@@ -360,7 +368,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   link: {
-    color: BLUE,
     fontWeight: "700",
   },
 });
