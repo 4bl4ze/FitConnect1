@@ -1,4 +1,4 @@
-import { loginUser,LoginRequest } from "@/services/authService";
+import { LoginRequest, loginUser } from "@/services/authService";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -40,11 +40,27 @@ export default function SignInScreen() {
     "icon",
   );
   const textColor = useThemeColor({}, "text");
+  const subtitleColor = useThemeColor(
+    { light: "#6B7280", dark: "#D1D5DB" },
+    "icon",
+  );
   const placeholderColor = useThemeColor(
     { light: "#6B7280", dark: "#D1D5DB" },
     "icon",
   );
   const buttonBg = useThemeColor({ light: "#2563EB", dark: "#3B82F6" }, "tint");
+  const backButtonBg = useThemeColor(
+    { light: "rgba(37,99,235,0.1)", dark: "rgba(96,165,250,0.15)" },
+    "background",
+  );
+  const backButtonTextColor = useThemeColor(
+    { light: "#2563EB", dark: "#60A5FA" },
+    "tint",
+  );
+  const linkColor = useThemeColor(
+    { light: "#2563EB", dark: "#60A5FA" },
+    "tint",
+  );
 
   const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
@@ -55,13 +71,11 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       const normalizedEmail = email.trim().toLowerCase();
-    const normalizedPassword = password.trim();
-
+      const normalizedPassword = password.trim();
 
       const payload: LoginRequest = {
         email: normalizedEmail,
         password: normalizedPassword,
-        fullName: normalizedEmail.split("@")[0] || "FitConnect User",
       };
 
       const response = await loginUser(payload);
@@ -100,16 +114,20 @@ export default function SignInScreen() {
         <View style={styles.topRow}>
           <TouchableOpacity
             onPress={() => router.push("/" as never)}
-            style={styles.backButton}
+            style={[styles.backButton, { backgroundColor: backButtonBg }]}
           >
-            <ThemedText style={styles.backButtonText}>
+            <ThemedText
+              style={[styles.backButtonText, { color: backButtonTextColor }]}
+            >
               {"< Back to signup"}
             </ThemedText>
           </TouchableOpacity>
         </View>
         <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-          <ThemedText type="title">Sign In</ThemedText>
-          <ThemedText style={styles.subtitle}>
+          <ThemedText type="title" style={{ color: textColor }}>
+            Sign In
+          </ThemedText>
+          <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>
             Enter your credentials to continue.
           </ThemedText>
 
@@ -183,7 +201,7 @@ export default function SignInScreen() {
               router.replace("/(tabs)");
             }}
           >
-            <ThemedText style={styles.secondaryText}>
+            <ThemedText style={[styles.secondaryText, { color: linkColor }]}>
               Continue as guest
             </ThemedText>
           </TouchableOpacity>
@@ -252,7 +270,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   secondaryText: {
-    color: "#2563EB",
     fontWeight: "600",
   },
   topRow: {

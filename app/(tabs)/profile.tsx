@@ -1,12 +1,12 @@
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  View,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -33,13 +33,14 @@ export default function ProfileScreen() {
         try {
           const users = await getAllUsers();
           const currentUserData = users.find(
-            (u) => u.email.toLowerCase() === user.email.toLowerCase()
+            (u) => u.email.toLowerCase() === user.email.toLowerCase(),
           );
 
           if (currentUserData && isMounted) {
             await updateProfile({
               fullName: currentUserData.fullName,
-              displayName: currentUserData.fullName || currentUserData.displayName,
+              displayName:
+                currentUserData.fullName || currentUserData.displayName,
               goal: currentUserData.goal,
               level: currentUserData.level,
               photoURL: currentUserData.photoURL,
@@ -55,7 +56,7 @@ export default function ProfileScreen() {
       return () => {
         isMounted = false;
       };
-    }, [user?.email, updateProfile])
+    }, [user?.email, updateProfile]),
   );
 
   const themeMode = useThemeStore((state) => state.mode);
@@ -81,6 +82,10 @@ export default function ProfileScreen() {
   const dangerButtonBg = useThemeColor(
     { light: "#FEE2E2", dark: "#7F1D1D" },
     "background",
+  );
+  const dangerTextColor = useThemeColor(
+    { light: "#B91C1C", dark: "#FEE2E2" },
+    "text",
   );
   const mutedTextColor = useThemeColor(
     { light: "#6B7280", dark: "#9CA3AF" },
@@ -265,7 +270,7 @@ export default function ProfileScreen() {
         }}
       >
         <ThemedText
-          style={{ color: "#DC2626", fontWeight: "600", fontSize: 16 }}
+          style={{ color: dangerTextColor, fontWeight: "600", fontSize: 16 }}
         >
           Log out
         </ThemedText>
@@ -282,7 +287,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 20,
     gap: 20,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   profileCard: {
     padding: 24,
