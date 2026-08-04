@@ -16,7 +16,6 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useWorkoutStore } from "@/stores/useWorkoutStore";
-
 type Exercise = {
   id: string;
   name: string;
@@ -601,7 +600,7 @@ export default function StartWorkout() {
 
                 <ThemedText style={{ marginLeft: 8 }}>reps</ThemedText>
               </View>
-            </View>
+          </View>
           </View>
         )}
       />
