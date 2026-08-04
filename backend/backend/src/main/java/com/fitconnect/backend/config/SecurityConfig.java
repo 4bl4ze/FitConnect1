@@ -34,8 +34,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ADDED "/api/ai/workouts/**" here so Postman can access it without a JWT token
-                        .requestMatchers("/api/auth/**", "/error", "/ws/**", "/api/ai/workouts/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/error", "/ws/**", "/api/ai/workouts/**", "/api/payments/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)

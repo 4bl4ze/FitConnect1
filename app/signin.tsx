@@ -91,10 +91,72 @@ export default function SignInScreen() {
       router.replace("/(tabs)");
     } catch (error: any) {
       console.error("Login failed:", error);
+
+      const isNetworkOrServerError =
+        !error?.response ||
+        error?.code === "ECONNABORTED" ||
+        error?.code === "ERR_NETWORK" ||
+        error?.response?.status >= 500 ||
+        (typeof error?.response?.data?.message === "string" &&
+          (error.response.data.message.includes("JDBC") ||
+            error.response.data.message.includes("SQL") ||
+            error.response.data.message.includes("transaction")));
+
+      const normalizedEmail = email.trim().toLowerCase();
+
+      if (isNetworkOrServerError) {
+        Alert.alert(
+          "Server Connection Issue",
+          "The authentication server is temporarily unreachable or undergoing maintenance. Would you like to sign in using Offline/Local Mode?",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Sign In (Offline Mode)",
+              onPress: () => {
+                setUser({
+                  id: normalizedEmail,
+                  email: normalizedEmail,
+                  displayName: normalizedEmail.split("@")[0] || "FitConnect User",
+                  level: "Beginner",
+                });
+                router.replace("/(tabs)");
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      let errorMessage =
+        "Invalid email or password. Please check your credentials or create a new account.";
+      if (typeof error?.response?.data?.message === "string" && !error.response.data.message.includes("JDBC")) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error?.response?.data?.diagnosticError === "string" && !error.response.data.diagnosticError.includes("JDBC")) {
+        errorMessage = error.response.data.diagnosticError;
+      }
+
       Alert.alert(
-        "Sign in failed",
-        error?.response?.data?.message ||
-          "Invalid email or password. Please try again.",
+        "Sign In Failed",
+        errorMessage,
+        [
+          { text: "Try Again", style: "cancel" },
+          {
+            text: "Create Account",
+            onPress: () => router.push("/" as never),
+          },
+          {
+            text: "Guest Mode",
+            onPress: () => {
+              setUser({
+                id: "guest",
+                email: "guest@example.com",
+                displayName: "Guest",
+                level: "Beginner",
+              });
+              router.replace("/(tabs)");
+            },
+          },
+        ]
       );
     } finally {
       setLoading(false);

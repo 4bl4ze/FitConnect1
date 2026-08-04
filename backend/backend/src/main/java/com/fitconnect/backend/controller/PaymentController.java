@@ -17,8 +17,14 @@ public class PaymentController {
 
     @PostMapping("/initialize")
     public ResponseEntity<?> initializePayment(@RequestBody PaymentRequest request) {
-        String authUrl = paystackService.initializePayment(request);
-        return ResponseEntity.ok(Map.of("authorization_url", authUrl));
+        try {
+            String authUrl = paystackService.initializePayment(request);
+            return ResponseEntity.ok(Map.of("authorization_url", authUrl));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", e.getMessage()
+            ));
+        }
     }
 
     @PostMapping("/webhook")

@@ -1,57 +1,43 @@
+import API, { deleteToken, getToken, saveToken, TOKEN_KEY } from "./client";
 
-import { Platform } from "react-native";
-import API, { TOKEN_KEY } from "./client";
-import * as SecureStore from "expo-secure-store";
-
-// Specific payload types for stronger TypeScript safety
-export interface RegisterRequest {
-  fullName: string;
+export interface AuthRequest {
   email: string;
   password: string;
+  fullName?: string;
+  name?: string;
 }
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface ResetPasswordRequest {
-  token: string;
-  newPassword: string;
-}
+export type RegisterRequest = AuthRequest;
+export type LoginRequest = AuthRequest;
 
 export interface AuthResponse {
   token: string;
-    message: string;
+  message?: string;
 }
 
-// Cross-platform SecureStore wrapper (Prevents crashes on Web)
-const saveToken = async (token: string) => {
-  if (Platform.OS === "web") {
-    localStorage.setItem(TOKEN_KEY, token);
-  } else {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
-  }
-};
+export { deleteToken, getToken, saveToken, TOKEN_KEY };
 
-const deleteToken = async () => {
-  if (Platform.OS === "web") {
-    localStorage.removeItem(TOKEN_KEY);
-  } else {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-  }
-};
+export const registerUser = async (
+  data: RegisterRequest,
+): Promise<AuthResponse> => {
+  const payload = {
+    email: data.email,
+    password: data.password,
+    ...(data.fullName ? { fullName: data.fullName } : {}),
+    ...(data.name ? { name: data.name } : {}),
+    ...(data.fullName && !data.name ? { name: data.fullName } : {}),
+  };
 
-// 1. REGISTER USER -> Returns AuthResponse (JWT Token) to match AuthController
-export const registerUser = async (data: RegisterRequest): Promise<AuthResponse> => {
-  const response = await API.post<AuthResponse>("/auth/register", data);
+  const response = await API.post<any>("/auth/register", payload);
+  if (typeof response.data === "string") {
+    return { token: "", message: response.data };
+  }
   if (response.data?.token) {
     await saveToken(response.data.token);
   }
   return response.data;
 };
 
-// 2. LOGIN USER -> Saves JWT token & returns response
 export const loginUser = async (data: LoginRequest): Promise<AuthResponse> => {
   const response = await API.post<AuthResponse>("/auth/login", data);
   if (response.data?.token) {
@@ -60,19 +46,19 @@ export const loginUser = async (data: LoginRequest): Promise<AuthResponse> => {
   return response.data;
 };
 
-// 3. LOGOUT USER -> Clears saved token
 export const logoutUser = async (): Promise<void> => {
   await deleteToken();
 };
 
-// 4. FORGOT PASSWORD -> Sends { email } object matching AuthController Map
-export const requestPasswordReset = async (email: string): Promise<string> => {
-  const response = await API.post<string>("/auth/forgot-password", { email });
+export const requestPasswordReset = async (email: string): Promise<any> => {
+  const response = await API.post("/auth/forgot-password", { email });
   return response.data;
 };
 
-// 5. RESET PASSWORD -> Completes the password reset process
-export const resetPassword = async (data: ResetPasswordRequest): Promise<string> => {
-  const response = await API.post<string>("/auth/reset-password", data);
+export const resetPassword = async (data: {
+  token: string;
+  newPassword: string;
+}): Promise<any> => {
+  const response = await API.post("/auth/resetPassword", data);
   return response.data;
 };

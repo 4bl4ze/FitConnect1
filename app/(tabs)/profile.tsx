@@ -32,19 +32,21 @@ export default function ProfileScreen() {
 
         try {
           const users = await getAllUsers();
-          const currentUserData = users.find(
-            (u) => u.email.toLowerCase() === user.email.toLowerCase(),
-          );
+          if (Array.isArray(users)) {
+            const currentUserData = users.find(
+              (u) => u.email && u.email.toLowerCase() === user.email.toLowerCase(),
+            );
 
-          if (currentUserData && isMounted) {
-            await updateProfile({
-              fullName: currentUserData.fullName,
-              displayName:
-                currentUserData.fullName || currentUserData.displayName,
-              goal: currentUserData.goal,
-              level: currentUserData.level,
-              photoURL: currentUserData.photoURL,
-            });
+            if (currentUserData && isMounted) {
+              await updateProfile({
+                fullName: currentUserData.fullName,
+                displayName:
+                  currentUserData.fullName || currentUserData.displayName,
+                goal: currentUserData.goal,
+                level: currentUserData.level,
+                photoURL: currentUserData.photoURL,
+              });
+            }
           }
         } catch (error) {
           console.error("Failed to fetch updated user profile:", error);

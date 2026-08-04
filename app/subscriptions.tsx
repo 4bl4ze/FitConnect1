@@ -1,18 +1,20 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Linking,
-    Pressable,
-    StyleSheet,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  View,
 } from "react-native";
 
+import { PaystackCheckout } from "@/components/PayStackCheckout";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { initializePayment } from "@/services/paymentService";
+
+import { useAuthStore } from "@/stores/useAuthStore";
 
 type PlanId = "basic" | "monthly" | "annual";
 
@@ -24,12 +26,7 @@ interface Plan {
 }
 
 const plans: Plan[] = [
-  {
-    id: "basic",
-    title: "Basic",
-    description: "Workout tracking",
-    amount: 0,
-  },
+  { id: "basic", title: "Basic", description: "Workout tracking", amount: 0 },
   {
     id: "monthly",
     title: "Monthly Pro Plan (GHs 30)",
@@ -45,8 +42,12 @@ const plans: Plan[] = [
 ];
 
 export default function SubscriptionScreen() {
+  const { user, updateProfile } = useAuthStore();
   const [selectedPlan, setSelectedPlan] = useState<Plan>(plans[0]);
   const [loading, setLoading] = useState(false);
+
+  const [checkoutVisible, setCheckoutVisible] = useState(false);
+  const [authorizationUrl, setAuthorizationUrl] = useState<string | null>(null);
 
   const cardBg = useThemeColor(
     { light: "#F3F4F6", dark: "#2C2C2C" },
@@ -54,58 +55,64 @@ export default function SubscriptionScreen() {
   );
 
   const subscribe = async () => {
-    // 1. Basic / Free Plan logic
     if (selectedPlan.amount === 0) {
+      updateProfile({ level: "Beginner" });
       Alert.alert("Plan Selected", "You are currently on the free Basic plan.");
       return;
     }
 
     setLoading(true);
-
     try {
-      // 2. Request checkout URL from Spring Boot backend
-      // Replace with logged-in user's email when user context is ready
+      const email = user?.email || "user@example.com";
       const response = await initializePayment({
-        email: "user@example.com",
+        email,
         amount: selectedPlan.amount,
       });
 
-      // 3. Open Paystack authorization URL using React Native Linking
       if (response?.authorization_url) {
-        const canOpen = await Linking.canOpenURL(response.authorization_url);
-        if (canOpen) {
-          await Linking.openURL(response.authorization_url);
-        } else {
-          Alert.alert("Error", "Unable to open checkout URL on this device.");
-        }
+        setAuthorizationUrl(response.authorization_url);
+        setCheckoutVisible(true);
       } else {
         Alert.alert(
           "Payment Error",
           "Failed to retrieve checkout link from server.",
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment initialization failed:", error);
-      Alert.alert(
-        "Connection Error",
-        "Could not connect to the payment server. Make sure your Spring Boot backend is running.",
-      );
+      const message = error?.message || "Could not initialize payment.";
+      Alert.alert("Payment Error", message);
     } finally {
       setLoading(false);
     }
   };
 
-  const cancelSubscription = () => {
+  const handleCheckoutSuccess = async (reference: string | null) => {
+    setCheckoutVisible(false);
+    await updateProfile({ level: "Pro" });
+    Alert.alert(
+      "Payment Successful! 🎉",
+      reference
+        ? `Thank you for subscribing! Your Pro features are now unlocked. (Ref: ${reference})`
+        : "Thank you for subscribing! Your Pro features are now unlocked.",
+    );
+  };
+
+  const handleCheckoutCancel = () => {
+    setCheckoutVisible(false);
+  };
+
+  const cancelSubscription = async () => {
+    await updateProfile({ level: "Beginner" });
     Alert.alert(
       "Subscription Cancelled",
-      "Your subscription has been cancelled.",
+      "Your subscription has been cancelled and reset to Basic.",
     );
   };
 
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title">Subscriptions</ThemedText>
-
       <ThemedText>Choose a plan that matches your fitness goals.</ThemedText>
 
       <View style={styles.planContainer}>
@@ -154,33 +161,29 @@ export default function SubscriptionScreen() {
       >
         <ThemedText style={styles.buttonText}>Back to Profile</ThemedText>
       </Pressable>
+
+      <PaystackCheckout
+        visible={checkoutVisible}
+        authorizationUrl={authorizationUrl}
+        onClose={() => setCheckoutVisible(false)}
+        onSuccess={handleCheckoutSuccess}
+        onCancel={handleCheckoutCancel}
+      />
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    gap: 16,
-  },
-  planContainer: {
-    gap: 12,
-  },
-  card: {
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 2,
-  },
+  container: { flex: 1, padding: 20, gap: 16 },
+  planContainer: { gap: 12 },
+  card: { padding: 20, borderRadius: 16, borderWidth: 2 },
   primaryButton: {
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
     backgroundColor: "#4CAF50",
   },
-  disabledButton: {
-    opacity: 0.6,
-  },
+  disabledButton: { opacity: 0.6 },
   secondaryButton: {
     padding: 16,
     borderRadius: 12,
@@ -193,8 +196,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#9CA3AF",
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
+  buttonText: { color: "#FFFFFF", fontWeight: "600" },
 });

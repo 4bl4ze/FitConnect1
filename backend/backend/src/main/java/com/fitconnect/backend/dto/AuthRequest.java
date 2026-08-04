@@ -4,6 +4,7 @@ public class AuthRequest {
     private String email;
     private String password;
     private String fullName; // Added for registration
+    private String name; // Support the frontend's signup payload
 
     // Getters and Setters
     public String getEmail() {
@@ -28,5 +29,13 @@ public class AuthRequest {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

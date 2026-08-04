@@ -47,48 +47,34 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody AuthRequest request) {
         try {
+            if (request.getEmail() == null || request.getEmail().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Email is required."));
+            }
+            if (request.getPassword() == null || request.getPassword().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Password is required."));
+            }
             if (userRepository.existsByEmail(request.getEmail())) {
-                return ResponseEntity.badRequest().body("Error: Email is already in use!");
+                return ResponseEntity.badRequest().body(Map.of("message", "Error: Email is already in use!"));
+            }
+
+            String displayName = request.getFullName();
+            if (displayName == null || displayName.isBlank()) {
+                displayName = request.getName();
+            }
+            if (displayName == null || displayName.isBlank()) {
+                displayName = request.getEmail().split("@")[0];
             }
 
             User user = new User();
             user.setEmail(request.getEmail());
             user.setPassword(passwordEncoder.encode(request.getPassword()));
-            user.setFullName(request.getFullName());
-            user.setVerified(false);
-
-            String token = UUID.randomUUID().toString();
-            user.setVerificationToken(token);
-            user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
+            user.setFullName(displayName);
+            user.setVerified(true); // Auto-verify user so sign in works immediately
 
             userRepository.save(user);
-            sendVerificationEmail(user);
 
-            return ResponseEntity.ok("Registration successful. Please check your email and verify your account before logging in.");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            Map<String, Object> errorDetails = new HashMap<>();
-            errorDetails.put("diagnosticError", "Backend Crashed during registration!");
-            errorDetails.put("message", e.getMessage());
-            return ResponseEntity.status(500).body(errorDetails);
-        }
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
-        try {
-            Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
-            if (optionalUser.isPresent() && !optionalUser.get().isVerified()) {
-                return ResponseEntity.status(403).body("Email not verified. Please verify before logging in.");
-            }
-
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-            );
-
-            // Use the service to load user details for the token
-            UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+            // Generate JWT token for immediate login upon registration
+            UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
             String token = jwtService.generateToken(userDetails);
 
             return ResponseEntity.ok(new AuthResponse(token));
@@ -96,9 +82,50 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             Map<String, Object> errorDetails = new HashMap<>();
-            errorDetails.put("diagnosticError", "Login failed! Check your credentials.");
-            errorDetails.put("message", e.getMessage());
+            errorDetails.put("diagnosticError", "Registration failed: " + e.getMessage());
+            errorDetails.put("message", "Registration failed. Please check your details or try again.");
+            return ResponseEntity.status(500).body(errorDetails);
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+        try {
+            if (request.getEmail() == null || request.getEmail().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Email is required."));
+            }
+            if (request.getPassword() == null || request.getPassword().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Password is required."));
+            }
+
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+
+            Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
+            if (optionalUser.isPresent() && !optionalUser.get().isVerified()) {
+                User user = optionalUser.get();
+                user.setVerified(true);
+                userRepository.save(user);
+            }
+
+            // Use the service to load user details for the token
+            UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+            String token = jwtService.generateToken(userDetails);
+
+            return ResponseEntity.ok(new AuthResponse(token));
+
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            Map<String, Object> errorDetails = new HashMap<>();
+            errorDetails.put("diagnosticError", "Invalid email or password.");
+            errorDetails.put("message", "Invalid email or password. Check your credentials.");
             return ResponseEntity.status(401).body(errorDetails);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> errorDetails = new HashMap<>();
+            errorDetails.put("diagnosticError", "Login failed: " + e.getMessage());
+            errorDetails.put("message", "Sign in service encountered an internal error. Please try again or use offline mode.");
+            return ResponseEntity.status(500).body(errorDetails);
         }
     }
 

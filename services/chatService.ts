@@ -1,7 +1,6 @@
 import { Client, IMessage, StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import client from "./client"; // Your Axios instance
+import client, { getToken } from "./client"; // Your Axios instance
 
 // Matches your Spring Boot ChatMessage model
 export interface ChatMessage {
@@ -29,7 +28,7 @@ class ChatService {
    * Route: GET /api/chat/history/{otherUserEmail}
    */
   async getChatHistory(otherUserEmail: string): Promise<ChatMessage[]> {
-    const response = await client.get<ChatMessage[]>(`/api/chat/history/${otherUserEmail}`);
+    const response = await client.get<ChatMessage[]>(`/chat/history/${encodeURIComponent(otherUserEmail)}`);
     return response.data;
   }
 
@@ -48,11 +47,12 @@ class ChatService {
 
     this.isConnecting = true;
 
-    const baseURL = client.defaults.baseURL || "http://10.0.2.2:8080";
-    const socketUrl = `${baseURL.replace(/\/$/, "")}/ws`;
+    const baseURL = client.defaults.baseURL || "https://fitconnect-backend-kyfw.onrender.com/api";
+    const socketUrl = `${baseURL.replace(/\/api\/?$/, "")}/ws`;
 
     // Retrieve JWT token (matches storage key used by client.ts)
-    const token = await AsyncStorage.getItem("token");
+    const token = await getToken();
+
 
     this.stompClient = new Client({
       webSocketFactory: () => new SockJS(socketUrl),

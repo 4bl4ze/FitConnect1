@@ -24,7 +24,7 @@ class FriendshipService {
    */
   async sendFriendRequest(receiverId: number): Promise<Friendship> {
     const response = await client.post<Friendship>(
-      `/api/friends/request/${receiverId}`
+      `/friends/request/${receiverId}`
     );
     return response.data;
   }
@@ -35,7 +35,7 @@ class FriendshipService {
    */
   async acceptFriendRequest(friendshipId: number): Promise<Friendship> {
     const response = await client.put<Friendship>(
-      `/api/friends/accept/${friendshipId}`
+      `/friends/accept/${friendshipId}`
     );
     return response.data;
   }
@@ -46,7 +46,7 @@ class FriendshipService {
    */
   async getPendingRequests(): Promise<Friendship[]> {
     const response = await client.get<Friendship[]>(
-      "/api/friends/requests/pending"
+      "/friends/requests/pending"
     );
     return response.data;
   }
@@ -56,9 +56,9 @@ class FriendshipService {
    * Route: GET /api/friends/list
    */
   async getFriendsList(): Promise<Friendship[]> {
-    const response = await client.get<Friendship[]>("/api/friends/list");
+    const response = await client.get<Friendship[]>("/friends/list");
     return response.data;
   }
 }
 
-export const friendshipService = new FriendshipService();
+export const friendshipService = new FriendshipService();

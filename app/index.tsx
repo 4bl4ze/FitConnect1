@@ -16,6 +16,7 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function SignupScreen() {
   const [fullName, setFullName] = useState("");
@@ -25,6 +26,9 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const setUser = useAuthStore((state) => state.setUser);
+
 
   const backgroundColor = useThemeColor({}, "background");
   const inputBg = useThemeColor(
@@ -69,9 +73,8 @@ export default function SignupScreen() {
       return;
     }
 
-    const nameRegex = /^[a-zA-Z\s]+$/;
-    if (!nameRegex.test(fullName.trim())) {
-      Alert.alert("Invalid Name", "Full name should contain letters only.");
+    if (fullName.trim().length < 2) {
+      Alert.alert("Invalid Name", "Please enter a valid full name.");
       return;
     }
 
@@ -94,38 +97,92 @@ export default function SignupScreen() {
     setLoading(true);
 
     try {
-      // registerUser returns a plain text string from Spring Boot
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPassword = password.trim();
+      const normalizedFullName = fullName.trim();
+
       const response = await registerUser({
-        fullName: fullName.trim(),
-        email: email.trim(),
-        password: password.trim(),
+        fullName: normalizedFullName,
+        email: normalizedEmail,
+        password: normalizedPassword,
       });
 
-      // Display success/verification alert, then route to Sign In
-      Alert.alert(
-        "Account Created!",
-        response.message ||
-          "Please check your email to verify your account before logging in.",
-        [
-          {
-            text: "Go to Sign In",
-            onPress: () => router.push("./signin"),
-          },
-        ],
-      );
+      setUser({
+        id: normalizedEmail,
+        email: normalizedEmail,
+        fullName: normalizedFullName,
+        displayName: normalizedFullName,
+        level: "Beginner",
+        token: response?.token,
+      });
+
+      if (response?.token) {
+        router.replace("/(tabs)");
+      } else {
+        Alert.alert(
+          "Account Created!",
+          response?.message || "Account created successfully! Welcome to FitConnect.",
+          [
+            {
+              text: "Continue",
+              onPress: () => router.replace("/(tabs)"),
+            },
+          ],
+        );
+      }
     } catch (error: any) {
       console.error("Registration error:", error);
-      Alert.alert(
-        "Registration Failed",
-        typeof error?.response?.data === "string"
-          ? error.response.data
-          : error?.response?.data?.message ||
-              "Could not create account. Please try again.",
-      );
+
+      const isNetworkOrServerError =
+        !error?.response ||
+        error?.code === "ECONNABORTED" ||
+        error?.code === "ERR_NETWORK" ||
+        error?.response?.status >= 500 ||
+        (typeof error?.response?.data?.message === "string" &&
+          (error.response.data.message.includes("JDBC") ||
+            error.response.data.message.includes("SQL") ||
+            error.response.data.message.includes("transaction")));
+
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedFullName = fullName.trim();
+
+      if (isNetworkOrServerError) {
+        Alert.alert(
+          "Server Connection Issue",
+          "The registration server is temporarily unreachable or undergoing maintenance. Would you like to create your account in Offline/Local Mode?",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Continue (Offline Mode)",
+              onPress: () => {
+                setUser({
+                  id: normalizedEmail,
+                  email: normalizedEmail,
+                  fullName: normalizedFullName,
+                  displayName: normalizedFullName,
+                  level: "Beginner",
+                });
+                router.replace("/(tabs)");
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      let errorMessage = "Could not create account. Please check your details and try again.";
+      if (typeof error?.response?.data?.message === "string" && !error.response.data.message.includes("JDBC")) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error?.response?.data?.diagnosticError === "string" && !error.response.data.diagnosticError.includes("JDBC")) {
+        errorMessage = error.response.data.diagnosticError;
+      }
+
+      Alert.alert("Registration Failed", errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <KeyboardAvoidingView
