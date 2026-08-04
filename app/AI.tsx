@@ -1,4 +1,3 @@
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
@@ -106,11 +105,11 @@ export default function AITrainer() {
     "icon",
   );
   const userBubbleColor = useThemeColor(
-    { light: "#2563EB", dark: "#3B82F6" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const aiBubbleColor = useThemeColor(
-    { light: "#DBEAFE", dark: "#1E3A8A" },
+    { light: "#DBEAFE", dark: "#2563EB" },
     "background",
   );
   const inputBg = useThemeColor(
@@ -539,7 +538,8 @@ export default function AITrainer() {
                 {item.workoutPlan?.exercises?.map((exercise, index) => (
                   <View key={exercise.id ?? index} style={styles.exerciseCard}>
                     <ThemedText style={styles.messageText}>
-                      • {exercise.name}: {exercise.sets} sets x {exercise.reps} reps
+                      • {exercise.name}: {exercise.sets} sets x {exercise.reps}{" "}
+                      reps
                     </ThemedText>
                   </View>
                 ))}

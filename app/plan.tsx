@@ -1,6 +1,12 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
+import {
+    ActivityIndicator,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    View
+} from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -40,7 +46,10 @@ export default function PlanScreen() {
           if (todayWorkout.notes) setDescription(todayWorkout.notes);
         }
       } catch (error) {
-        console.log("Could not load backend schedule, falling back to store:", error);
+        console.log(
+          "Could not load backend schedule, falling back to store:",
+          error,
+        );
       } finally {
         setLoading(false);
       }
@@ -69,7 +78,7 @@ export default function PlanScreen() {
     { light: "#64748B", dark: "#94A3B8" },
     "icon",
   );
-  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#60A5FA" }, "tint");
+  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#2563EB" }, "tint");
 
   const savePlan = () => {
     setPlanForDay(dayKey, {
@@ -98,7 +107,11 @@ export default function PlanScreen() {
         <ThemedText type="subtitle">Plan details</ThemedText>
 
         {loading ? (
-          <ActivityIndicator size="small" color={buttonBg} style={{ marginVertical: 20 }} />
+          <ActivityIndicator
+            size="small"
+            color={buttonBg}
+            style={{ marginVertical: 20 }}
+          />
         ) : (
           <>
             <TextInput

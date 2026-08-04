@@ -104,7 +104,7 @@ export default function StartWorkout() {
     "background",
   );
   const timerBorderColor = useThemeColor(
-    { light: "#2563EB", dark: "#60A5FA" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const exerciseIconColor = timerBorderColor;
