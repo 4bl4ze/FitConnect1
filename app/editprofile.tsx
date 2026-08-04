@@ -2,15 +2,15 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -41,7 +41,7 @@ export default function EditProfileScreen() {
     { light: "#6B7280", dark: "#D1D5DB" },
     "icon",
   );
-  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#3B82F6" }, "tint");
+  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#2563EB" }, "tint");
   const cardBg = useThemeColor(
     { light: "#F3F4F6", dark: "#2C2C2C" },
     "background",
@@ -74,7 +74,10 @@ export default function EditProfileScreen() {
     }
 
     if (!user?.email) {
-      Alert.alert("Error", "User session email not found. Please log in again.");
+      Alert.alert(
+        "Error",
+        "User session email not found. Please log in again.",
+      );
       return;
     }
 
@@ -98,7 +101,10 @@ export default function EditProfileScreen() {
       router.replace("/(tabs)/profile");
     } catch (error) {
       console.error("Profile update failed:", error);
-      Alert.alert("Error", "Failed to update profile on backend database. Please try again.");
+      Alert.alert(
+        "Error",
+        "Failed to update profile on backend database. Please try again.",
+      );
     } finally {
       setLoading(false);
     }

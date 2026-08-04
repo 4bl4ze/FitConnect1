@@ -1,14 +1,14 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
+    ActivityIndicator,
+    FlatList,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -44,7 +44,7 @@ export default function BuddyChatScreen() {
   );
   const textColor = useThemeColor({}, "text");
   const userBubbleBg = useThemeColor(
-    { light: "#2563EB", dark: "#3B82F6" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const buddyBubbleBg = useThemeColor(
@@ -148,7 +148,9 @@ export default function BuddyChatScreen() {
           data={messages}
           keyExtractor={(item, index) => item.id ?? index.toString()}
           contentContainerStyle={styles.messageList}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToEnd({ animated: true })
+          }
           renderItem={({ item }) => {
             // Message is from the user if receiverEmail matches otherUserEmail
             const isUser = item.receiverEmail === otherUserEmail;

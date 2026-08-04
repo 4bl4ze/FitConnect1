@@ -48,17 +48,17 @@ export default function SignInScreen() {
     { light: "#6B7280", dark: "#D1D5DB" },
     "icon",
   );
-  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#3B82F6" }, "tint");
+  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#2563EB" }, "tint");
   const backButtonBg = useThemeColor(
-    { light: "rgba(37,99,235,0.1)", dark: "rgba(96,165,250,0.15)" },
+    { light: "rgba(37,99,235,0.1)", dark: "rgba(37,99,235,0.15)" },
     "background",
   );
   const backButtonTextColor = useThemeColor(
-    { light: "#2563EB", dark: "#60A5FA" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const linkColor = useThemeColor(
-    { light: "#2563EB", dark: "#60A5FA" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
 

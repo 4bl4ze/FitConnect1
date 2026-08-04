@@ -53,16 +53,16 @@ export default function SignupScreen() {
     "background",
   );
   const toggleTextColor = useThemeColor(
-    { light: "#2563EB", dark: "#60A5FA" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const forgotTextColor = useThemeColor(
     { light: "#6B7280", dark: "#9CA3AF" },
     "icon",
   );
-  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#60A5FA" }, "tint");
+  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#2563EB" }, "tint");
   const linkColor = useThemeColor(
-    { light: "#2563EB", dark: "#60A5FA" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const titleColor = useThemeColor({}, "text");
