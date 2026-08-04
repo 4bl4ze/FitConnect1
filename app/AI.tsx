@@ -898,7 +898,7 @@ export default function AITrainer() {
                     >
                       <Ionicons name="calendar-outline" size={16} color="#FFFFFF" />
                       <ThemedText style={styles.actionBtnText}>
-                        Save as Today's Plan
+                        Save as Todays Plan
                       </ThemedText>
                     </Pressable>
                     <Pressable
