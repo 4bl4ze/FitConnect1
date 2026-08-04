@@ -549,27 +549,22 @@
 //   );
 // }
 
-
-
-
-
-
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -577,9 +572,9 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import {
-  analyzeBodyPhysique,
-  generateAiWorkoutPlan,
-  WorkoutPlan,
+    analyzeBodyPhysique,
+    generateAiWorkoutPlan,
+    WorkoutPlan,
 } from "@/services/aiService"; // Ensure correct import path
 
 type AttachmentKind = "image" | "video" | "document";
@@ -661,11 +656,11 @@ export default function AITrainer() {
     "icon",
   );
   const userBubbleColor = useThemeColor(
-    { light: "#2563EB", dark: "#3B82F6" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const aiBubbleColor = useThemeColor(
-    { light: "#DBEAFE", dark: "#1E3A8A" },
+    { light: "#DBEAFE", dark: "#2563EB" },
     "background",
   );
   const inputBg = useThemeColor(
@@ -1094,7 +1089,8 @@ export default function AITrainer() {
                 {item.workoutPlan?.exercises?.map((exercise, index) => (
                   <View key={exercise.id ?? index} style={styles.exerciseCard}>
                     <ThemedText style={styles.messageText}>
-                      • {exercise.name}: {exercise.sets} sets x {exercise.reps} reps
+                      • {exercise.name}: {exercise.sets} sets x {exercise.reps}{" "}
+                      reps
                     </ThemedText>
                   </View>
                 ))}

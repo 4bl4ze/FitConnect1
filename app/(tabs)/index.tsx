@@ -63,7 +63,7 @@ export default function Dashboard() {
   const colorScheme = useColorScheme();
   const backgroundColor = useThemeColor({}, "background");
   const textColor = useThemeColor({}, "text");
-  const tintColor = useThemeColor({}, "tint");
+  const tintColor = "#2563EB";
   const iconColor = useThemeColor({}, "icon");
   const surfaceColor = useThemeColor(
     { light: "#FFFFFF", dark: "#101D2E" },
@@ -310,6 +310,14 @@ export default function Dashboard() {
 
           <QuickCard
             icon="people"
+            title="Friends"
+            description="Connect with workout buddies and chat."
+            onPress={() => router.push("/friends" as never)}
+            styles={styles}
+          />
+
+          <QuickCard
+            icon="people"
             title="Book trainer"
             description="Work with an experienced fitness coach."
             onPress={() => router.push("/bookTrainer" as never)}
@@ -530,7 +538,7 @@ const createStyles = (props: ThemeStyleProps) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: props.backgroundColor,
+      backgroundColor: "#000000",
     },
 
     container: {

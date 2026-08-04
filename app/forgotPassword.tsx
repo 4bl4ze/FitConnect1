@@ -1,8 +1,8 @@
 import { ThemedText } from "@/components/themed-text";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { requestPasswordReset } from "@/services/authService";
 import { router } from "expo-router";
 import { useState } from "react";
-import { requestPasswordReset } from "@/services/authService";
 import {
     Alert,
     KeyboardAvoidingView,
@@ -38,15 +38,15 @@ export default function ForgotPasswordScreen() {
     "icon",
   );
   const linkColor = useThemeColor(
-    { light: "#2563EB", dark: "#60A5FA" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const disabledButtonColor = useThemeColor(
-    { light: "#93C5FD", dark: "#1D4ED8" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
 
-const handleResetRequest = async () => {
+  const handleResetRequest = async () => {
     // 1. Basic validation
     if (!email.trim()) {
       Alert.alert("Error", "Please enter your email address.");
@@ -78,14 +78,16 @@ const handleResetRequest = async () => {
                 params: { email: email.trim() },
               }),
           },
-        ]
+        ],
       );
     } catch (error: any) {
       console.error("Password reset error:", error);
 
       const errorMessage =
         error?.response?.data?.message ||
-        (typeof error?.response?.data === "string" ? error.response.data : null) ||
+        (typeof error?.response?.data === "string"
+          ? error.response.data
+          : null) ||
         "Something went wrong. Please try again later.";
 
       Alert.alert("Error", errorMessage);

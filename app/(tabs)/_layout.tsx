@@ -23,7 +23,7 @@ export default function TabLayout() {
       <StatusBar style={isDark ? "light" : "dark"} />
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+          tabBarActiveTintColor: "#2563EB",
           tabBarInactiveTintColor: Colors[colorScheme ?? "light"].icon,
           headerShown: false,
           tabBarButton: HapticTab,
@@ -67,9 +67,7 @@ export default function TabLayout() {
                   borderRadius: 22,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: focused
-                    ? Colors[colorScheme ?? "light"].tint
-                    : "transparent",
+                  backgroundColor: focused ? "#2563EB" : "transparent",
                 }}
               >
                 <IconSymbol
@@ -93,9 +91,7 @@ export default function TabLayout() {
                   borderRadius: 22,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: focused
-                    ? Colors[colorScheme ?? "light"].tint
-                    : "transparent",
+                  backgroundColor: focused ? "#2563EB" : "transparent",
                 }}
               >
                 <IconSymbol
@@ -120,9 +116,7 @@ export default function TabLayout() {
                     borderRadius: 22,
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: focused
-                      ? Colors[colorScheme ?? "light"].tint
-                      : "transparent",
+                    backgroundColor: focused ? "#2563EB" : "transparent",
                   }}
                 >
                   <IconSymbol

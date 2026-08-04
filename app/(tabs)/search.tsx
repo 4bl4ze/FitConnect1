@@ -91,15 +91,15 @@ export default function SearchScreen() {
     "icon",
   );
   const activeButtonBg = useThemeColor(
-    { light: "#DDECF3", dark: "#0A4A5C" },
+    { light: "#DDECF3", dark: "#2563EB" },
     "background",
   );
   const activeBorderColor = useThemeColor(
-    { light: "#7FB6C8", dark: "#0A9EC8" },
+    { light: "#7FB6C8", dark: "#2563EB" },
     "tint",
   );
   const primaryButtonBg = useThemeColor(
-    { light: "#2563EB", dark: "#3B82F6" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
 

@@ -4,12 +4,12 @@ import { useAudioPlayer } from "expo-audio";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    TextInput,
-    View,
+  Alert,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -105,7 +105,7 @@ export default function StartWorkout() {
     "background",
   );
   const timerBorderColor = useThemeColor(
-    { light: "#2563EB", dark: "#60A5FA" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const exerciseIconColor = timerBorderColor;

@@ -1,12 +1,12 @@
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -76,7 +76,7 @@ export default function ProfileScreen() {
     "icon",
   );
   const buttonTextColor = useThemeColor(
-    { light: "#2563EB", dark: "#3B82F6" },
+    { light: "#2563EB", dark: "#2563EB" },
     "tint",
   );
   const dangerButtonBg = useThemeColor(
@@ -164,7 +164,7 @@ export default function ProfileScreen() {
           onPress={() => router.push("/editprofile")}
         >
           <ThemedText style={{ color: buttonTextColor, fontWeight: "600" }}>
-            ✏️ Edit Profile
+            Edit Profile
           </ThemedText>
         </TouchableOpacity>
 
@@ -176,7 +176,7 @@ export default function ProfileScreen() {
           onPress={() => router.push("/subscriptions")}
         >
           <ThemedText style={{ color: buttonTextColor, fontWeight: "600" }}>
-            💳 Subscriptions
+            Subscriptions
           </ThemedText>
         </TouchableOpacity>
 
@@ -188,7 +188,7 @@ export default function ProfileScreen() {
           onPress={() => setShowSettings((prev) => !prev)}
         >
           <ThemedText style={{ color: buttonTextColor, fontWeight: "600" }}>
-            ⚙️ Settings
+            Settings
           </ThemedText>
         </TouchableOpacity>
 
