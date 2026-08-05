@@ -15,7 +15,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaystackService {
 
-    @Value("${paystack.secret.key:}")
+    @Value("${paystack.secret.key:pk_live_53ab1be6e74f7c649341e11e377e376442e87d0c}")
     private String secretKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -40,7 +40,7 @@ public class PaystackService {
         Map<String, Object> body = Map.of(
                 "email", request.getEmail(),
                 "amount", (int) Math.round(request.getAmount() * 100),
-                "callback_url", "http://localhost:3000/payment/success"
+                "callback_url", "https://standard.paystack.co/close"
         );
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);

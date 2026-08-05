@@ -12,7 +12,8 @@ import { ThemedText } from "@/components/themed-text";
 
 interface PaystackCheckoutProps {
   visible: boolean;
-  authorizationUrl: string | null;
+  authorizationUrl?: string | null;
+  htmlContent?: string | null;
   /** Optional: if your backend sets a callback_url on init, pass its base
    *  here (e.g. "https://fitconnect-backend-kyfw.onrender.com/api/payments/callback")
    *  so we can detect it precisely. If omitted we fall back to Paystack's
@@ -30,6 +31,9 @@ interface PaystackCheckoutProps {
 const DEFAULT_SUCCESS_PATTERNS = [
   "standard.paystack.co/close",
   "checkout.paystack.com/close",
+  "paystack.co/close",
+  "payment/success",
+  "callback",
 ];
 
 function extractReference(url: string): string | null {
@@ -46,6 +50,7 @@ function extractReference(url: string): string | null {
 export function PaystackCheckout({
   visible,
   authorizationUrl,
+  htmlContent,
   callbackUrlPrefix,
   onClose,
   onSuccess,
@@ -102,6 +107,12 @@ export function PaystackCheckout({
     onClose();
   }, [onCancel, onClose]);
 
+  const webViewSource = authorizationUrl
+    ? { uri: authorizationUrl }
+    : htmlContent
+    ? { html: htmlContent, baseUrl: "https://checkout.paystack.com" }
+    : null;
+
   return (
     <Modal
       visible={visible}
@@ -116,16 +127,17 @@ export function PaystackCheckout({
         </Pressable>
       </View>
 
-      {authorizationUrl ? (
+      {webViewSource ? (
         <View style={styles.webviewWrapper}>
           <WebView
-            source={{ uri: authorizationUrl }}
+            source={webViewSource}
             onNavigationStateChange={handleNavChange}
             onShouldStartLoadWithRequest={handleShouldStartLoad}
             onLoadEnd={() => setLoading(false)}
             startInLoadingState
             javaScriptEnabled
             domStorageEnabled
+            originWhitelist={["*"]}
             style={styles.webview}
           />
           {loading && (

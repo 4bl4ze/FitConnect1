@@ -48,6 +48,7 @@ export default function SubscriptionScreen() {
 
   const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [authorizationUrl, setAuthorizationUrl] = useState<string | null>(null);
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
 
   const cardBg = useThemeColor(
     { light: "#F3F4F6", dark: "#2C2C2C" },
@@ -71,6 +72,11 @@ export default function SubscriptionScreen() {
 
       if (response?.authorization_url) {
         setAuthorizationUrl(response.authorization_url);
+        setHtmlContent(null);
+        setCheckoutVisible(true);
+      } else if (response?.htmlContent) {
+        setAuthorizationUrl(null);
+        setHtmlContent(response.htmlContent);
         setCheckoutVisible(true);
       } else {
         Alert.alert(
@@ -165,6 +171,7 @@ export default function SubscriptionScreen() {
       <PaystackCheckout
         visible={checkoutVisible}
         authorizationUrl={authorizationUrl}
+        htmlContent={htmlContent}
         onClose={() => setCheckoutVisible(false)}
         onSuccess={handleCheckoutSuccess}
         onCancel={handleCheckoutCancel}
