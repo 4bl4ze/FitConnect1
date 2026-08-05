@@ -1,11 +1,8 @@
-import {
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ImageBackground,
-  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -15,1394 +12,1039 @@ import {
   View,
 } from "react-native";
 
-const COLORS = {
-  background: "#090D0C",
-  surface: "#131918",
-  surfaceLight: "#1C2422",
-  green: "#C8FF3D",
-  darkGreen: "#113C32",
-  white: "#FFFFFF",
-  muted: "#A7B1AE",
-  orange: "#FF7433",
-  purple: "#8B6CFF",
-  blue: "#4AA8FF",
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useWorkoutStore } from "@/stores/useWorkoutStore";
+
+type ThemeStyleProps = {
+  backgroundColor: string;
+  textColor: string;
+  tintColor: string;
+  iconColor: string;
+  surfaceColor: string;
+  surfaceLightColor: string;
+  mutedColor: string;
+  borderColor: string;
+  successColor: string;
+};
+
+const IMAGES = {
+  hero: require("../../assets/images/workouts/hero-workout.jpg"),
+  upperBody: require("../../assets/images/workouts/upper-body.jpg"),
+  lowerBody: require("../../assets/images/workouts/lower-body.jpg"),
+  abs: require("../../assets/images/workouts/abs-workout.jpg"),
+  chest: require("../../assets/images/workouts/chest-workout.jpg"),
 };
 
 export default function Dashboard() {
+  const user = useAuthStore((state) => state.user);
+
+  const heroSlides = [
+    IMAGES.upperBody,
+    IMAGES.lowerBody,
+    IMAGES.abs,
+    IMAGES.chest,
+  ];
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentHeroIndex((prevIndex) => (prevIndex + 1) % heroSlides.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const heroSource = heroSlides[currentHeroIndex];
+
+  const totalWorkouts = useWorkoutStore((state) => state.totalWorkouts) ?? 0;
+
+  const colorScheme = useColorScheme();
+  const backgroundColor = useThemeColor({}, "background");
+  const textColor = useThemeColor({}, "text");
+  const tintColor = "#2563EB";
+  const iconColor = useThemeColor({}, "icon");
+  const surfaceColor = useThemeColor(
+    { light: "#FFFFFF", dark: "#101D2E" },
+    "background",
+  );
+  const surfaceLightColor = useThemeColor(
+    { light: "#F3F4F6", dark: "#17263A" },
+    "background",
+  );
+  const mutedColor = useThemeColor(
+    { light: "#6B7280", dark: "#9CA3AF" },
+    "icon",
+  );
+  const borderColor = useThemeColor(
+    { light: "rgba(0,0,0,0.08)", dark: "rgba(255,255,255,0.10)" },
+    "icon",
+  );
+  const successColor = "#35D07F";
+
+  const dayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todaysPlan = useWorkoutStore((state) => state.plansByDay[dayKey]);
+  const recentWorkouts = useWorkoutStore((state) => state.recentWorkouts);
+  const streakDays = useWorkoutStore((state) => state.streakDays) ?? 0;
+
+  const styles = useMemo(
+    () =>
+      createStyles({
+        backgroundColor,
+        textColor,
+        tintColor,
+        iconColor,
+        surfaceColor,
+        surfaceLightColor,
+        mutedColor,
+        borderColor,
+        successColor,
+      }),
+    [
+      backgroundColor,
+      textColor,
+      tintColor,
+      iconColor,
+      surfaceColor,
+      surfaceLightColor,
+      mutedColor,
+      borderColor,
+    ],
+  );
+  const statusBarStyle =
+    colorScheme === "dark" ? "light-content" : "dark-content";
+
+  const displayName =
+    user?.displayName || user?.email?.split("@")[0] || "Athlete";
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} />
 
       <ScrollView
-        style={styles.screen}
+        style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top navigation */}
-        <View style={styles.topNavigation}>
+        {/* Header */}
+        <View style={styles.header}>
           <View>
-            <Text style={styles.brandName}>FitConnect</Text>
-            <Text style={styles.brandSubtitle}>
-              Train stronger every day
-            </Text>
+            <Text style={styles.brand}>FITCONNECT</Text>
+            <Text style={styles.tagline}>Train stronger every day</Text>
           </View>
 
-          <Pressable style={styles.notificationButton}>
+          <Pressable
+            style={styles.notificationButton}
+            onPress={() => router.push("/notifications" as never)}
+          >
             <Ionicons
               name="notifications-outline"
               size={23}
-              color={COLORS.white}
+              color={textColor}
             />
-
             <View style={styles.notificationDot} />
           </Pressable>
         </View>
 
-        {/* 3D hero section */}
-       <View style={styles.heroShadow}>
-  <ImageBackground
-    source={require("../../assets/images/workouts/hero-workout.jpg")}
-    style={styles.realHeroCard}
-    imageStyle={styles.realHeroImage}
-  >
-    <View style={styles.realHeroOverlay} />
+        {/* Hero */}
+        <ImageBackground
+          source={heroSource}
+          style={styles.hero}
+          imageStyle={styles.heroImage}
+        >
+          <View style={styles.heroOverlay} />
 
-    <View style={styles.realHeroContent}>
-      <View style={styles.heroLabel}>
-        <Ionicons
-          name="flash"
-          size={13}
-          color={COLORS.darkGreen}
-        />
+          <View style={styles.heroContent}>
+            <View style={styles.heroBadge}>
+              <Ionicons name="flash" size={13} color={textColor} />
+              <Text style={styles.heroBadgeText}>DAILY FITNESS</Text>
+            </View>
 
-        <Text style={styles.heroLabelText}>
-          DAILY FITNESS
-        </Text>
-      </View>
+            <View style={styles.heroPager}>
+              {heroSlides.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.heroDot,
+                    index === currentHeroIndex && styles.heroDotActive,
+                  ]}
+                />
+              ))}
+            </View>
 
-      <Text style={styles.realHeroTitle}>
-        Build your{"\n"}best body
-      </Text>
+            <Text style={styles.heroTitle}>Build your{"\n"}best body</Text>
 
-      <Text style={styles.realHeroDescription}>
-        Train consistently and become stronger with every workout.
-      </Text>
+            <Text style={styles.heroDescription}>
+              Train consistently and become stronger with every workout.
+            </Text>
 
-      <Pressable
-        style={styles.heroButton}
-        onPress={() => router.push("/Workout" as any)}
-      >
-        <Text style={styles.heroButtonText}>
-          Start training
-        </Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={() => router.push("/Workout" as never)}
+            >
+              <Text style={styles.primaryButtonText}>Start training</Text>
+              <Ionicons name="arrow-forward" size={21} color={textColor} />
+            </Pressable>
+          </View>
+        </ImageBackground>
 
-        <Ionicons
-          name="arrow-forward"
-          size={19}
-          color={COLORS.darkGreen}
-        />
-      </Pressable>
-    </View>
-  </ImageBackground>
-</View>
-
-        {/* Greeting */}
-        <View style={styles.greetingRow}>
+        {/* Welcome */}
+        <View style={styles.welcomeRow}>
           <View>
-            <Text style={styles.greeting}>Welcome back</Text>
-            <Text style={styles.userName}>Demo User</Text>
+            <Text style={styles.welcomeLabel}>Welcome back</Text>
+            <Text style={styles.userName}>{displayName}</Text>
           </View>
 
-          <View style={styles.levelBadge}>
-            <Ionicons
-              name="trophy"
-              size={17}
-              color={COLORS.green}
-            />
-
-            <Text style={styles.levelText}>Level 8</Text>
+          <View style={styles.trophyButton}>
+            <Ionicons name="trophy" size={22} color={tintColor} />
           </View>
         </View>
 
-        {/* Progress cards */}
+        {/* Statistics */}
         <View style={styles.statsRow}>
-          <View style={styles.statShadow}>
-            <View style={styles.statCard}>
-              <View style={styles.statIconGreen}>
-                <MaterialCommunityIcons
-                  name="dumbbell"
-                  size={21}
-                  color={COLORS.darkGreen}
-                />
-              </View>
+          <StatCard
+            icon="barbell"
+            value={String(totalWorkouts)}
+            label="Workouts"
+            styles={styles}
+          />
 
-              <Text style={styles.statValue}>18</Text>
-              <Text style={styles.statLabel}>Workouts</Text>
-            </View>
-          </View>
+          <StatCard icon="flame" value="0" label="Calories" styles={styles} />
 
-          <View style={styles.statShadow}>
-            <View style={styles.statCard}>
-              <View style={styles.statIconOrange}>
-                <Ionicons
-                  name="flame"
-                  size={22}
-                  color={COLORS.orange}
-                />
-              </View>
-
-              <Text style={styles.statValue}>5.2k</Text>
-              <Text style={styles.statLabel}>Calories</Text>
-            </View>
-          </View>
-
-          <View style={styles.statShadow}>
-            <View style={styles.statCard}>
-              <View style={styles.statIconPurple}>
-                <Ionicons
-                  name="medal"
-                  size={21}
-                  color={COLORS.purple}
-                />
-              </View>
-
-              <Text style={styles.statValue}>12</Text>
-              <Text style={styles.statLabel}>Day streak</Text>
-            </View>
-          </View>
+          <StatCard
+            icon="medal"
+            value={String(streakDays)}
+            label="Day streak"
+            styles={styles}
+          />
         </View>
 
-        {/* Today's workout heading */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionEyebrow}>RECOMMENDED</Text>
-            <Text style={styles.sectionTitle}>
-              Today&apos;s workout
-            </Text>
-          </View>
+        {/* Recommended */}
+        <SectionHeader
+          eyebrow="RECOMMENDED"
+          title="Today's workout"
+          buttonText="View plan"
+          onPress={() => router.push("/plan" as never)}
+          styles={styles}
+        />
 
-          <Pressable
-            onPress={() => router.push("/Workout" as any)}
-          >
-            <Text style={styles.viewAllText}>View plan</Text>
-          </Pressable>
-        </View>
-
-        {/* Main workout photo card */}
-        <Pressable
-          style={styles.mainWorkoutShadow}
-          onPress={() => router.push("/Workout" as any)}
+        <ImageBackground
+          source={IMAGES.upperBody}
+          style={styles.featuredWorkout}
+          imageStyle={styles.featuredImage}
         >
-          <ImageBackground
-            source={require("../../assets/images/workouts/upper-body.jpg")}
-            style={styles.mainWorkoutCard}
-            imageStyle={styles.mainWorkoutImage}
-          >
-            <View style={styles.mainWorkoutOverlay} />
+          <View style={styles.workoutOverlay} />
 
-            <View style={styles.mainWorkoutContent}>
-              <View style={styles.todayBadge}>
-                <Text style={styles.todayBadgeText}>TODAY</Text>
-              </View>
+          <View style={styles.todayBadge}>
+            <Text style={styles.todayBadgeText}>TODAY</Text>
+          </View>
 
-              <View style={styles.mainWorkoutBottom}>
-                <View>
-                  <Text style={styles.mainWorkoutTitle}>
-                    Upper Body Strength
+          <View style={styles.featuredBottom}>
+            <View style={styles.featuredTextArea}>
+              <Text style={styles.featuredTitle}>
+                {todaysPlan?.title ?? "Today's workout"}
+              </Text>
+
+              <Text style={styles.featuredSubtitle}>
+                {todaysPlan?.description ??
+                  "Open your plan to set today's workout."}
+              </Text>
+
+              <View style={styles.workoutDetails}>
+                <View style={styles.detailItem}>
+                  <Ionicons name="time-outline" size={17} color={textColor} />
+                  <Text style={styles.detailText}>
+                    {todaysPlan?.durationMinutes ?? 45} min
                   </Text>
-
-                  <Text style={styles.mainWorkoutDescription}>
-                    Chest, shoulders and triceps
-                  </Text>
-
-                  <View style={styles.workoutInformation}>
-                    <View style={styles.informationItem}>
-                      <Ionicons
-                        name="time-outline"
-                        size={17}
-                        color={COLORS.white}
-                      />
-
-                      <Text style={styles.informationText}>
-                        45 min
-                      </Text>
-                    </View>
-
-                    <View style={styles.informationItem}>
-                      <MaterialCommunityIcons
-                        name="dumbbell"
-                        size={17}
-                        color={COLORS.white}
-                      />
-
-                      <Text style={styles.informationText}>
-                        6 exercises
-                      </Text>
-                    </View>
-                  </View>
                 </View>
 
-                <View style={styles.playButtonShadow}>
-                  <View style={styles.playButton}>
-                    <Ionicons
-                      name="play"
-                      size={25}
-                      color={COLORS.darkGreen}
-                    />
-                  </View>
+                <View style={styles.detailItem}>
+                  <Ionicons
+                    name="barbell-outline"
+                    size={17}
+                    color={textColor}
+                  />
+                  <Text style={styles.detailText}>
+                    {todaysPlan?.exercises ?? 6} exercises
+                  </Text>
                 </View>
               </View>
             </View>
-          </ImageBackground>
-        </Pressable>
 
-        {/* Workout collections */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionEyebrow}>
-              TRAINING PROGRAMS
-            </Text>
-            <Text style={styles.sectionTitle}>
-              Explore workouts
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.workoutGrid}>
-          {/* Lower body */}
-          <Pressable
-            style={styles.smallCardShadow}
-            onPress={() => router.push("/Workout" as any)}
-          >
-            <ImageBackground
-              source={require("../../assets/images/workouts/lower-body.jpg")}
-              style={styles.smallWorkoutCard}
-              imageStyle={styles.smallWorkoutImage}
+            <Pressable
+              style={styles.playButton}
+              onPress={() => router.push("/plan" as never)}
             >
-              <View style={styles.smallWorkoutOverlay} />
-
-              <View style={styles.smallWorkoutContent}>
-                <View style={styles.difficultyBadge}>
-                  <Text style={styles.difficultyText}>
-                    INTERMEDIATE
-                  </Text>
-                </View>
-
-                <View>
-                  <Text style={styles.smallWorkoutTitle}>
-                    Lower Body
-                  </Text>
-
-                  <Text style={styles.smallWorkoutDescription}>
-                    8 exercises • 40 min
-                  </Text>
-                </View>
-              </View>
-            </ImageBackground>
-          </Pressable>
-
-          {/* Abs */}
-          <Pressable
-            style={styles.smallCardShadow}
-            onPress={() => router.push("/Workout" as any)}
-          >
-            <ImageBackground
-              source={require("../../assets/images/workouts/abs-workout.jpg")}
-              style={styles.smallWorkoutCard}
-              imageStyle={styles.smallWorkoutImage}
-            >
-              <View style={styles.smallWorkoutOverlay} />
-
-              <View style={styles.smallWorkoutContent}>
-                <View style={styles.beginnerBadge}>
-                  <Text style={styles.beginnerBadgeText}>
-                    BEGINNER
-                  </Text>
-                </View>
-
-                <View>
-                  <Text style={styles.smallWorkoutTitle}>
-                    Abs Workout
-                  </Text>
-
-                  <Text style={styles.smallWorkoutDescription}>
-                    6 exercises • 20 min
-                  </Text>
-                </View>
-              </View>
-            </ImageBackground>
-          </Pressable>
-        </View>
-
-        {/* Chest workout */}
-        <Pressable
-          style={styles.wideCardShadow}
-          onPress={() => router.push("/Workout" as any)}
-        >
-          <ImageBackground
-            source={require("../../assets/images/workouts/chest-workout.jpg")}
-            style={styles.wideWorkoutCard}
-            imageStyle={styles.wideWorkoutImage}
-          >
-            <View style={styles.wideWorkoutOverlay} />
-
-            <View style={styles.wideWorkoutContent}>
-              <View style={styles.wideWorkoutText}>
-                <Text style={styles.sectionEyebrowLight}>
-                  STRENGTH TRAINING
-                </Text>
-
-                <Text style={styles.wideWorkoutTitle}>
-                  Chest Builder
-                </Text>
-
-                <Text style={styles.wideWorkoutDescription}>
-                  Build strength and upper-body power.
-                </Text>
-              </View>
-
-              <View style={styles.wideArrow}>
-                <Ionicons
-                  name="arrow-forward"
-                  size={21}
-                  color={COLORS.darkGreen}
-                />
-              </View>
-            </View>
-          </ImageBackground>
-        </Pressable>
-
-        {/* Quick actions */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionEyebrow}>FITCONNECT</Text>
-            <Text style={styles.sectionTitle}>Quick access</Text>
+              <Ionicons name="play" size={28} color={textColor} />
+            </Pressable>
           </View>
+        </ImageBackground>
+
+        {/* Quick Access */}
+        <SectionHeader
+          eyebrow="FITCONNECT"
+          title="Quick access"
+          styles={styles}
+        />
+
+        <View style={styles.quickGrid}>
+          <QuickCard
+            icon="calendar"
+            title="Training plan"
+            description="Organise your weekly training schedule."
+            onPress={() => router.push("/plan" as never)}
+            styles={styles}
+          />
+
+          <QuickCard
+            icon="sparkles"
+            title="AI assistant"
+            description="Get personalised workout guidance."
+            onPress={() => router.push("/AI" as never)}
+            styles={styles}
+          />
+
+          <QuickCard
+            icon="people"
+            title="Friends"
+            description="Connect with workout buddies and chat."
+            onPress={() => router.push("/friends" as never)}
+            styles={styles}
+          />
+
+          <QuickCard
+            icon="people"
+            title="Book trainer"
+            description="Work with an experienced fitness coach."
+            onPress={() => router.push("/bookTrainer" as never)}
+            styles={styles}
+          />
+
+          <QuickCard
+            icon="stats-chart"
+            title="Performance"
+            description="Review your workout progress."
+            onPress={() => router.push("/streaks" as never)}
+            styles={styles}
+          />
         </View>
 
-        <View style={styles.quickActionsGrid}>
-          <Pressable
-            style={styles.quickActionShadow}
-            onPress={() => router.push("/Workout" as any)}
-          >
-            <View style={styles.quickActionCard}>
-              <View style={styles.quickIconGreen}>
-                <Ionicons
-                  name="calendar"
-                  size={25}
-                  color={COLORS.darkGreen}
-                />
-              </View>
-
-              <Text style={styles.quickActionTitle}>
-                Workout Planner
-              </Text>
-
-              <Text style={styles.quickActionDescription}>
-                Organise your weekly training schedule.
-              </Text>
-
-              <Ionicons
-                name="arrow-forward"
-                size={19}
-                color={COLORS.green}
-              />
-            </View>
-          </Pressable>
-
-          <Pressable
-            style={styles.quickActionShadow}
-            onPress={() => router.push("/AI" as any)}
-          >
-            <View style={styles.quickActionCard}>
-              <View style={styles.quickIconPurple}>
-                <Ionicons
-                  name="sparkles"
-                  size={25}
-                  color={COLORS.purple}
-                />
-              </View>
-
-              <Text style={styles.quickActionTitle}>
-                AI Trainer
-              </Text>
-
-              <Text style={styles.quickActionDescription}>
-                Get personalised workout guidance.
-              </Text>
-
-              <Ionicons
-                name="arrow-forward"
-                size={19}
-                color={COLORS.green}
-              />
-            </View>
-          </Pressable>
-
-          <Pressable
-            style={styles.quickActionShadow}
-            onPress={() => router.push("/bookTrainer" as any)}
-          >
-            <View style={styles.quickActionCard}>
-              <View style={styles.quickIconOrange}>
-                <Ionicons
-                  name="people"
-                  size={25}
-                  color={COLORS.orange}
-                />
-              </View>
-
-              <Text style={styles.quickActionTitle}>
-                Book Trainer
-              </Text>
-
-              <Text style={styles.quickActionDescription}>
-                Work with an experienced fitness coach.
-              </Text>
-
-              <Ionicons
-                name="arrow-forward"
-                size={19}
-                color={COLORS.green}
-              />
-            </View>
-          </Pressable>
-
-          <View style={styles.quickActionShadow}>
-            <View style={styles.quickActionCard}>
-              <View style={styles.quickIconBlue}>
-                <Ionicons
-                  name="stats-chart"
-                  size={25}
-                  color={COLORS.blue}
-                />
-              </View>
-
-              <Text style={styles.quickActionTitle}>
-                Progress
-              </Text>
-
-              <Text style={styles.quickActionDescription}>
-                Review your workout performance.
-              </Text>
-
-              <Ionicons
-                name="arrow-forward"
-                size={19}
-                color={COLORS.green}
-              />
-            </View>
+        {/* Streak */}
+        <View style={styles.streakCard}>
+          <View style={styles.streakIcon}>
+            <Ionicons name="flame" size={30} color={tintColor} />
           </View>
-        </View>
 
-        {/* Streak card */}
-        <View style={styles.streakShadow}>
-          <View style={styles.streakCard}>
-            <View style={styles.streakFlameOuter}>
-              <View style={styles.streakFlameInner}>
-                <Ionicons
-                  name="flame"
-                  size={32}
-                  color={COLORS.orange}
-                />
-              </View>
-            </View>
+          <View style={styles.streakContent}>
+            <Text style={styles.streakTitle}>
+              {streakDays}-day workout streak
+            </Text>
 
-            <View style={styles.streakTextContainer}>
-              <Text style={styles.streakTitle}>
-                12-day workout streak
-              </Text>
+            <Text style={styles.streakDescription}>
+              Keep showing up. Your consistency is building real results.
+            </Text>
 
-              <Text style={styles.streakDescription}>
-                Keep showing up. Your consistency is building real
-                results.
-              </Text>
-
-              <View style={styles.streakProgressBackground}>
-                <View style={styles.streakProgressFill} />
-              </View>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${Math.min(
+                      Math.max((streakDays / 14) * 100, 8),
+                      100,
+                    )}%`,
+                  },
+                ]}
+              />
             </View>
           </View>
         </View>
 
         {/* Recent activity */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionEyebrow}>ACTIVITY</Text>
-            <Text style={styles.sectionTitle}>Recent workout</Text>
-          </View>
-        </View>
+        <SectionHeader
+          eyebrow="ACTIVITY"
+          title="Recent workouts"
+          styles={styles}
+        />
 
-        <View style={styles.recentShadow}>
+        {recentWorkouts.length > 0 ? (
+          recentWorkouts.map((workout) => (
+            <View key={workout.id} style={styles.recentCard}>
+              <View style={styles.recentIcon}>
+                <Ionicons name="barbell" size={26} color={textColor} />
+              </View>
+
+              <View style={styles.recentContent}>
+                <Text style={styles.recentTitle}>{workout.title}</Text>
+                <Text style={styles.recentDescription}>
+                  {workout.exercises} exercises · {workout.durationMinutes} min
+                </Text>
+              </View>
+
+              <View style={styles.completedIcon}>
+                <Ionicons name="checkmark" size={19} color={textColor} />
+              </View>
+            </View>
+          ))
+        ) : (
           <View style={styles.recentCard}>
-            <View style={styles.recentIconLayerBack} />
-
             <View style={styles.recentIcon}>
-              <MaterialCommunityIcons
-                name="arm-flex"
-                size={28}
-                color={COLORS.darkGreen}
-              />
+              <Ionicons name="barbell" size={26} color={textColor} />
             </View>
 
             <View style={styles.recentContent}>
-              <Text style={styles.recentTitle}>Push Day</Text>
-
+              <Text style={styles.recentTitle}>No recent workouts</Text>
               <Text style={styles.recentDescription}>
-                Bench press, incline press and triceps dips
+                Finish a workout to see it listed here.
               </Text>
-
-              <View style={styles.recentDetails}>
-                <Text style={styles.recentDetailText}>60 min</Text>
-                <View style={styles.recentDot} />
-                <Text style={styles.recentDetailText}>520 kcal</Text>
-              </View>
             </View>
-
-            <Ionicons
-              name="checkmark-circle"
-              size={26}
-              color="#50C878"
-            />
           </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const createShadow = (
-  shadowColor: string,
-  elevation: number,
-) => ({
-  shadowColor,
-  shadowOffset: {
-    width: 0,
-    height: 8,
-  },
-  shadowOpacity: 0.28,
-  shadowRadius: 12,
-  elevation,
-});
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    paddingTop: Platform.OS === "android" ? 18 : 0,
-  },
-
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-
-  content: {
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 130,
-  },
-
-  topNavigation: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 22,
-  },
-
-  brandName: {
-    color: COLORS.white,
-    fontSize: 25,
-    fontWeight: "900",
-    letterSpacing: -0.7,
-  },
-
-  brandSubtitle: {
-    color: COLORS.muted,
-    fontSize: 12,
-    marginTop: 3,
-  },
-
-  notificationButton: {
-    width: 47,
-    height: 47,
-    borderRadius: 16,
-    backgroundColor: COLORS.surfaceLight,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#293330",
-  },
-
-  notificationDot: {
-    position: "absolute",
-    top: 10,
-    right: 11,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: COLORS.orange,
-    borderWidth: 1.5,
-    borderColor: COLORS.surfaceLight,
-  },
-
-  heroShadow: {
-    borderRadius: 30,
-    marginBottom: 26,
-    ...createShadow("#000000", 12),
-  },
-
-  heroCard: {
-    minHeight: 290,
-    borderRadius: 30,
-    backgroundColor: COLORS.darkGreen,
-    overflow: "hidden",
-    padding: 22,
-  },
-
-  heroGlowOne: {
-    position: "absolute",
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(200,255,61,0.11)",
-    right: -65,
-    top: -40,
-  },
-
-  heroGlowTwo: {
-    position: "absolute",
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    left: -55,
-    bottom: -60,
-  },
-
-  heroTextContainer: {
-    width: "61%",
-    zIndex: 5,
-  },
-
-  heroLabel: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: COLORS.green,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 9,
-    marginBottom: 15,
-  },
-
-  heroLabelText: {
-    color: COLORS.darkGreen,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-
-  heroTitle: {
-    color: COLORS.white,
-    fontSize: 37,
-    lineHeight: 40,
-    fontWeight: "900",
-    letterSpacing: -1.5,
-  },
-
-  heroDescription: {
-    color: "#D5E0DC",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 11,
-  },
-
-  heroButton: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: COLORS.green,
-    paddingHorizontal: 17,
-    height: 47,
-    borderRadius: 15,
-    marginTop: 19,
-  },
-
-  heroButtonText: {
-    color: COLORS.darkGreen,
-    fontSize: 13,
-    fontWeight: "900",
-  },
-
-  graphicShadow: {
-    position: "absolute",
-    right: 8,
-    bottom: 34,
-    width: 132,
-    height: 160,
-    ...createShadow("#000000", 10),
-  },
-
-  graphicPlatform: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  graphicBackLayer: {
-    position: "absolute",
-    width: 115,
-    height: 130,
-    borderRadius: 32,
-    backgroundColor: "#275B49",
-    transform: [{ rotate: "8deg" }],
-  },
-
-  graphicCircle: {
-    width: 116,
-    height: 130,
-    borderRadius: 32,
-    backgroundColor: "#1B493C",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(200,255,61,0.15)",
-  },
-
-  graphicFrontLayer: {
-    position: "absolute",
-    bottom: -12,
-    right: 2,
-    width: 61,
-    height: 61,
-    borderRadius: 20,
-    backgroundColor: COLORS.green,
-    alignItems: "center",
-    justifyContent: "center",
-    transform: [{ rotate: "-9deg" }],
-    ...createShadow("#000000", 8),
-  },
-
-  greetingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 18,
-  },
-
-  greeting: {
-    color: COLORS.muted,
-    fontSize: 14,
-  },
-
-  userName: {
-    color: COLORS.white,
-    fontSize: 27,
-    fontWeight: "900",
-    marginTop: 2,
-  },
-
-  levelBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 13,
-    height: 40,
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: "#26302E",
-  },
-
-  levelText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-
-  statsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 31,
-  },
-
-  statShadow: {
-    flex: 1,
-    borderRadius: 20,
-    ...createShadow("#000000", 8),
-  },
-
-  statCard: {
-    minHeight: 134,
-    borderRadius: 20,
-    backgroundColor: COLORS.surface,
-    padding: 13,
-    borderWidth: 1,
-    borderColor: "#222C29",
-  },
-
-  statIconGreen: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    backgroundColor: COLORS.green,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-
-  statIconOrange: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    backgroundColor: "#332018",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-
-  statIconPurple: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    backgroundColor: "#251F3C",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
-
-  statValue: {
-    color: COLORS.white,
-    fontSize: 21,
-    fontWeight: "900",
-  },
-
-  statLabel: {
-    color: COLORS.muted,
-    fontSize: 11,
-    marginTop: 2,
-  },
-
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    marginBottom: 15,
-    marginTop: 5,
-  },
-
-  sectionEyebrow: {
-    color: COLORS.green,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-    marginBottom: 4,
-  },
-
-  sectionEyebrowLight: {
-    color: COLORS.green,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1.1,
-    marginBottom: 5,
-  },
-
-  sectionTitle: {
-    color: COLORS.white,
-    fontSize: 22,
-    fontWeight: "900",
-    letterSpacing: -0.5,
-  },
-
-  viewAllText: {
-    color: COLORS.green,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-
-  mainWorkoutShadow: {
-    borderRadius: 27,
-    marginBottom: 32,
-    ...createShadow("#000000", 13),
-  },
-
-  mainWorkoutCard: {
-    height: 330,
-    justifyContent: "flex-end",
-    borderRadius: 27,
-    overflow: "hidden",
-  },
-
-  mainWorkoutImage: {
-    borderRadius: 27,
-  },
-
-  mainWorkoutOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.43)",
-  },
-
-  mainWorkoutContent: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "space-between",
-  },
-
-  todayBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.green,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 9,
-  },
-
-  todayBadgeText: {
-    color: COLORS.darkGreen,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-
-  mainWorkoutBottom: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-  },
-
-  mainWorkoutTitle: {
-    color: COLORS.white,
-    fontSize: 26,
-    fontWeight: "900",
-    letterSpacing: -0.7,
-  },
-
-  mainWorkoutDescription: {
-    color: "#E2E7E5",
-    fontSize: 13,
-    marginTop: 5,
-  },
-
-  workoutInformation: {
-    flexDirection: "row",
-    gap: 17,
-    marginTop: 13,
-  },
-
-  informationItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  informationText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  playButtonShadow: {
-    borderRadius: 24,
-    ...createShadow("#000000", 8),
-  },
-
-  playButton: {
-    width: 63,
-    height: 63,
-    borderRadius: 22,
-    backgroundColor: COLORS.green,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  workoutGrid: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 13,
-  },
-
-  smallCardShadow: {
-    flex: 1,
-    borderRadius: 23,
-    ...createShadow("#000000", 9),
-  },
-
-  smallWorkoutCard: {
-    height: 235,
-    borderRadius: 23,
-    overflow: "hidden",
-  },
-
-  smallWorkoutImage: {
-    borderRadius: 23,
-  },
-
-  smallWorkoutOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.42)",
-  },
-
-  smallWorkoutContent: {
-    flex: 1,
-    padding: 14,
-    justifyContent: "space-between",
-  },
-
-  difficultyBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.orange,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 7,
-  },
-
-  difficultyText: {
-    color: COLORS.white,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.5,
-  },
-
-  beginnerBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.green,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 7,
-  },
-
-  beginnerBadgeText: {
-    color: COLORS.darkGreen,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 0.5,
-  },
-
-  smallWorkoutTitle: {
-    color: COLORS.white,
-    fontSize: 19,
-    fontWeight: "900",
-  },
-
-  smallWorkoutDescription: {
-    color: "#E6E9E8",
-    fontSize: 11,
-    marginTop: 4,
-  },
-
-  wideCardShadow: {
-    borderRadius: 24,
-    marginBottom: 31,
-    ...createShadow("#000000", 10),
-  },
-
-  wideWorkoutCard: {
-    height: 190,
-    borderRadius: 24,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-  },
-
-  wideWorkoutImage: {
-    borderRadius: 24,
-  },
-
-  wideWorkoutOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.48)",
-  },
-
-  wideWorkoutContent: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    padding: 18,
-  },
-
-  wideWorkoutText: {
-    flex: 1,
-  },
-
-  wideWorkoutTitle: {
-    color: COLORS.white,
-    fontSize: 23,
-    fontWeight: "900",
-  },
-
-  wideWorkoutDescription: {
-    color: "#DDE3E0",
-    fontSize: 12,
-    marginTop: 5,
-  },
-
-  wideArrow: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: COLORS.green,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  quickActionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 13,
-    marginBottom: 28,
-  },
-
-  quickActionShadow: {
-    width: "48.3%",
-    borderRadius: 21,
-    ...createShadow("#000000", 8),
-  },
-
-  quickActionCard: {
-    minHeight: 190,
-    borderRadius: 21,
-    backgroundColor: COLORS.surface,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#222C29",
-  },
-
-  quickIconGreen: {
-    width: 47,
-    height: 47,
-    borderRadius: 15,
-    backgroundColor: COLORS.green,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 15,
-  },
-
-  quickIconPurple: {
-    width: 47,
-    height: 47,
-    borderRadius: 15,
-    backgroundColor: "#251F3C",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 15,
-  },
-
-  quickIconOrange: {
-    width: 47,
-    height: 47,
-    borderRadius: 15,
-    backgroundColor: "#332018",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 15,
-  },
-
-  quickIconBlue: {
-    width: 47,
-    height: 47,
-    borderRadius: 15,
-    backgroundColor: "#172C3D",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 15,
-  },
-
-  quickActionTitle: {
-    color: COLORS.white,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-
-  quickActionDescription: {
-    color: COLORS.muted,
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 6,
-    marginBottom: 13,
-  },
-
-  streakShadow: {
-    borderRadius: 25,
-    marginBottom: 31,
-    ...createShadow("#000000", 9),
-  },
-
-  streakCard: {
-    minHeight: 145,
-    borderRadius: 25,
-    backgroundColor: "#241A14",
-    padding: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 15,
-    borderWidth: 1,
-    borderColor: "#3D291F",
-  },
-
-  streakFlameOuter: {
-    width: 70,
-    height: 70,
-    borderRadius: 24,
-    backgroundColor: "#302119",
-    alignItems: "center",
-    justifyContent: "center",
-    transform: [{ rotate: "-6deg" }],
-  },
-
-  streakFlameInner: {
-    width: 53,
-    height: 53,
-    borderRadius: 18,
-    backgroundColor: "#FFF4ED",
-    alignItems: "center",
-    justifyContent: "center",
-    transform: [{ rotate: "6deg" }],
-    ...createShadow("#000000", 5),
-  },
-
-  streakTextContainer: {
-    flex: 1,
-  },
-
-  streakTitle: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: "900",
-  },
-
-  streakDescription: {
-    color: "#C8BDB7",
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 5,
-  },
-
-  streakProgressBackground: {
-    height: 6,
-    borderRadius: 4,
-    backgroundColor: "#4A3428",
-    overflow: "hidden",
-    marginTop: 13,
-  },
-
-  streakProgressFill: {
-    width: "78%",
-    height: "100%",
-    backgroundColor: COLORS.orange,
-    borderRadius: 4,
-  },
-
-  recentShadow: {
-    borderRadius: 23,
-    ...createShadow("#000000", 8),
-  },
-
-  recentCard: {
-    minHeight: 117,
-    borderRadius: 23,
-    backgroundColor: COLORS.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 13,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: "#222C29",
-    overflow: "hidden",
-  },
-
-  recentIconLayerBack: {
-    position: "absolute",
-    left: 13,
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    backgroundColor: "#355130",
-    transform: [{ rotate: "9deg" }],
-  },
-
-  recentIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    backgroundColor: COLORS.green,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-  },
-
-  recentContent: {
-    flex: 1,
-  },
-
-  recentTitle: {
-    color: COLORS.white,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-
-  recentDescription: {
-    color: COLORS.muted,
-    fontSize: 10,
-    lineHeight: 15,
-    marginTop: 4,
-  },
-
-  recentDetails: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    marginTop: 7,
-  },
-
-  recentDetailText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: "700",
-  },
-
-  recentDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.muted,
-  },realHeroCard: {
-  height: 310,
-  borderRadius: 30,
-  overflow: "hidden",
-  justifyContent: "flex-end",
-},
-
-realHeroImage: {
-  borderRadius: 30,
-},
-
-realHeroOverlay: {
-  ...StyleSheet.absoluteFillObject,
-  backgroundColor: "rgba(0, 0, 0, 0.48)",
-},
-
-realHeroContent: {
-  flex: 1,
-  justifyContent: "flex-end",
-  padding: 22,
-  paddingBottom: 24,
-},
-
-realHeroTitle: {
-  color: COLORS.white,
-  fontSize: 36,
-  lineHeight: 39,
-  fontWeight: "900",
-  letterSpacing: -1.4,
-},
-
-realHeroDescription: {
-  color: "#E1E7E4",
-  fontSize: 13,
-  lineHeight: 19,
-  marginTop: 10,
-  width: "75%",
-},
-})
+type StatCardProps = {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  value: string;
+  label: string;
+  styles: ReturnType<typeof createStyles>;
+};
+
+function StatCard({ icon, value, label, styles }: StatCardProps) {
+  const textColor = useThemeColor({}, "text");
+
+  return (
+    <View style={styles.statCard}>
+      <View style={styles.statIcon}>
+        <Ionicons name={icon} size={21} color={textColor} />
+      </View>
+
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+type SectionHeaderProps = {
+  eyebrow: string;
+  title: string;
+  buttonText?: string;
+  onPress?: () => void;
+  styles: ReturnType<typeof createStyles>;
+};
+
+function SectionHeader({
+  eyebrow,
+  title,
+  buttonText,
+  onPress,
+  styles,
+}: SectionHeaderProps) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View>
+        <Text style={styles.sectionEyebrow}>{eyebrow}</Text>
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+
+      {buttonText ? (
+        <Pressable onPress={onPress}>
+          <Text style={styles.sectionButton}>{buttonText}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+type ProgramCardProps = {
+  image: number;
+  level: string;
+  title: string;
+  onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
+};
+
+function ProgramCard({
+  image,
+  level,
+  title,
+  onPress,
+  styles,
+}: ProgramCardProps) {
+  return (
+    <Pressable onPress={onPress}>
+      <ImageBackground
+        source={image}
+        style={styles.programCard}
+        imageStyle={styles.programImage}
+      >
+        <View style={styles.programOverlay} />
+
+        <View style={styles.programLevel}>
+          <Text style={styles.programLevelText}>{level}</Text>
+        </View>
+
+        <Text style={styles.programTitle}>{title}</Text>
+      </ImageBackground>
+    </Pressable>
+  );
+}
+
+type QuickCardProps = {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  title: string;
+  description: string;
+  onPress: () => void;
+  styles: ReturnType<typeof createStyles>;
+};
+
+function QuickCard({
+  icon,
+  title,
+  description,
+  onPress,
+  styles,
+}: QuickCardProps) {
+  const textColor = useThemeColor({}, "text");
+  const tintColor = useThemeColor({}, "tint");
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.quickCard,
+        pressed && styles.buttonPressed,
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.quickIcon}>
+        <Ionicons name={icon} size={24} color={textColor} />
+      </View>
+
+      <Text style={styles.quickTitle}>{title}</Text>
+      <Text style={styles.quickDescription}>{description}</Text>
+
+      <Ionicons name="arrow-forward" size={22} color={tintColor} />
+    </Pressable>
+  );
+}
+
+const createStyles = (props: ThemeStyleProps) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: "#000000",
+    },
+
+    container: {
+      flex: 1,
+      backgroundColor: props.backgroundColor,
+    },
+
+    content: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 120,
+    },
+
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 20,
+    },
+
+    brand: {
+      color: props.textColor,
+      fontSize: 22,
+      fontWeight: "900",
+      letterSpacing: 1.2,
+    },
+
+    tagline: {
+      color: props.mutedColor,
+      fontSize: 13,
+      marginTop: 4,
+    },
+
+    notificationButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: props.surfaceColor,
+      borderWidth: 1,
+      borderColor: props.borderColor,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    notificationDot: {
+      position: "absolute",
+      top: 10,
+      right: 10,
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: props.tintColor,
+    },
+
+    hero: {
+      height: 440,
+      justifyContent: "flex-end",
+      marginBottom: 26,
+    },
+
+    heroImage: {
+      borderRadius: 28,
+    },
+
+    heroOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: 28,
+      backgroundColor: "rgba(2,7,15,0.48)",
+    },
+
+    heroContent: {
+      padding: 24,
+    },
+
+    heroBadge: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      backgroundColor: props.tintColor,
+      borderRadius: 999,
+      paddingVertical: 8,
+      paddingHorizontal: 13,
+      marginBottom: 18,
+    },
+
+    heroBadgeText: {
+      color: props.textColor,
+      fontSize: 11,
+      fontWeight: "800",
+      letterSpacing: 1.2,
+    },
+
+    heroPager: {
+      flexDirection: "row",
+      gap: 8,
+      marginTop: 14,
+      marginBottom: 14,
+    },
+
+    heroDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "rgba(255,255,255,0.35)",
+    },
+
+    heroDotActive: {
+      backgroundColor: props.textColor,
+    },
+
+    heroTitle: {
+      color: props.textColor,
+      fontSize: 43,
+      lineHeight: 46,
+      fontWeight: "900",
+    },
+
+    heroDescription: {
+      color: props.textColor,
+      fontSize: 15,
+      lineHeight: 22,
+      marginTop: 14,
+      maxWidth: 285,
+    },
+
+    primaryButton: {
+      marginTop: 22,
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 18,
+      backgroundColor: props.tintColor,
+      borderRadius: 18,
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+
+    primaryButtonText: {
+      color: props.textColor,
+      fontSize: 15,
+      fontWeight: "800",
+    },
+
+    buttonPressed: {
+      opacity: 0.78,
+    },
+
+    welcomeRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 18,
+    },
+
+    welcomeLabel: {
+      color: props.mutedColor,
+      fontSize: 14,
+    },
+
+    userName: {
+      color: props.textColor,
+      fontSize: 25,
+      fontWeight: "800",
+      marginTop: 3,
+    },
+
+    trophyButton: {
+      width: 68,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: props.surfaceColor,
+      borderWidth: 1,
+      borderColor: props.borderColor,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    statsRow: {
+      flexDirection: "row",
+      gap: 10,
+      marginBottom: 30,
+    },
+
+    statCard: {
+      flex: 1,
+      minHeight: 135,
+      backgroundColor: props.surfaceColor,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: props.borderColor,
+      padding: 14,
+    },
+
+    statIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: 13,
+      backgroundColor: props.tintColor,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 15,
+    },
+
+    statValue: {
+      color: props.textColor,
+      fontSize: 22,
+      fontWeight: "900",
+    },
+
+    statLabel: {
+      color: props.textColor,
+      fontSize: 12,
+      marginTop: 5,
+    },
+
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      marginBottom: 15,
+      marginTop: 8,
+    },
+
+    sectionEyebrow: {
+      color: props.tintColor,
+      fontSize: 11,
+      fontWeight: "900",
+      letterSpacing: 2,
+      marginBottom: 5,
+    },
+
+    sectionTitle: {
+      color: props.textColor,
+      fontSize: 26,
+      fontWeight: "900",
+    },
+
+    sectionButton: {
+      color: props.tintColor,
+      fontSize: 14,
+      fontWeight: "800",
+      paddingBottom: 3,
+    },
+
+    featuredWorkout: {
+      height: 340,
+      justifyContent: "space-between",
+      padding: 18,
+      marginBottom: 30,
+    },
+
+    featuredImage: {
+      borderRadius: 26,
+    },
+
+    workoutOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: 26,
+      backgroundColor: "rgba(0,0,0,0.35)",
+    },
+
+    todayBadge: {
+      alignSelf: "flex-start",
+      backgroundColor: props.tintColor,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 999,
+    },
+
+    todayBadgeText: {
+      color: props.textColor,
+      fontSize: 11,
+      fontWeight: "900",
+      letterSpacing: 1.4,
+    },
+
+    featuredBottom: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+    },
+
+    featuredTextArea: {
+      flex: 1,
+      paddingRight: 12,
+    },
+
+    featuredTitle: {
+      color: props.textColor,
+      fontSize: 28,
+      fontWeight: "900",
+    },
+
+    featuredSubtitle: {
+      color: props.textColor,
+      fontSize: 14,
+      marginTop: 6,
+    },
+
+    workoutDetails: {
+      flexDirection: "row",
+      gap: 18,
+      marginTop: 14,
+    },
+
+    detailItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+
+    detailText: {
+      color: props.textColor,
+      fontSize: 13,
+      fontWeight: "700",
+    },
+
+    playButton: {
+      width: 64,
+      height: 64,
+      borderRadius: 20,
+      backgroundColor: props.tintColor,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    programsColumn: {
+      gap: 16,
+      marginBottom: 30,
+    },
+
+    programCard: {
+      width: "100%",
+      height: 260,
+      justifyContent: "space-between",
+      padding: 16,
+    },
+
+    programImage: {
+      borderRadius: 24,
+    },
+
+    programOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: 24,
+      backgroundColor: "rgba(0,0,0,0.30)",
+    },
+
+    programLevel: {
+      alignSelf: "flex-start",
+      backgroundColor: props.tintColor,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+    },
+
+    programLevelText: {
+      color: props.textColor,
+      fontSize: 10,
+      fontWeight: "900",
+      letterSpacing: 1.2,
+    },
+
+    programTitle: {
+      color: props.textColor,
+      fontSize: 24,
+      fontWeight: "900",
+    },
+
+    quickGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      rowGap: 12,
+      marginBottom: 28,
+    },
+
+    quickCard: {
+      width: "48.5%",
+      minHeight: 210,
+      backgroundColor: props.surfaceColor,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: props.borderColor,
+      padding: 17,
+    },
+
+    quickIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 15,
+      backgroundColor: props.tintColor,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 18,
+    },
+
+    quickTitle: {
+      color: props.textColor,
+      fontSize: 17,
+      fontWeight: "800",
+      marginBottom: 7,
+    },
+
+    quickDescription: {
+      color: props.textColor,
+      fontSize: 13,
+      lineHeight: 19,
+      flex: 1,
+    },
+
+    streakCard: {
+      flexDirection: "row",
+      backgroundColor: props.surfaceLightColor,
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: props.borderColor,
+      padding: 20,
+      marginBottom: 30,
+    },
+
+    streakIcon: {
+      width: 58,
+      height: 58,
+      borderRadius: 18,
+      backgroundColor: props.surfaceColor,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 15,
+    },
+
+    streakContent: {
+      flex: 1,
+    },
+
+    streakTitle: {
+      color: props.textColor,
+      fontSize: 18,
+      fontWeight: "900",
+    },
+
+    streakDescription: {
+      color: props.textColor,
+      fontSize: 13,
+      lineHeight: 19,
+      marginTop: 6,
+    },
+
+    progressTrack: {
+      height: 7,
+      backgroundColor: "rgba(255,255,255,0.10)",
+      borderRadius: 999,
+      overflow: "hidden",
+      marginTop: 16,
+    },
+
+    progressFill: {
+      height: "100%",
+      backgroundColor: props.tintColor,
+      borderRadius: 999,
+    },
+
+    recentCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: props.surfaceColor,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: props.borderColor,
+      padding: 17,
+    },
+
+    recentIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 18,
+      backgroundColor: props.tintColor,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    recentContent: {
+      flex: 1,
+      marginHorizontal: 14,
+    },
+
+    recentTitle: {
+      color: props.textColor,
+      fontSize: 15,
+      fontWeight: "800",
+    },
+
+    recentDescription: {
+      color: props.textColor,
+      fontSize: 12,
+      lineHeight: 18,
+      marginTop: 4,
+    },
+
+    completedIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: props.successColor,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });

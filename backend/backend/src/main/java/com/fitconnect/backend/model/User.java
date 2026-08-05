@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +30,12 @@ public class User {
     @Size(min = 6, message = "Password must be at least 6 characters")
     @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false)
+    private boolean verified = false;
+
+    private String verificationToken;
+    private LocalDateTime verificationTokenExpiry;
 
     // Added field for Personal Best
     private int allTimeMaxStreak = 0;

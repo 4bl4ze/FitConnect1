@@ -1,36 +1,85 @@
-
+import { registerUser } from "@/services/authService";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
-  View,
-  TextInput,
-  Pressable,
-  StyleSheet,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
 } from "react-native";
-import { router } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
-
-const BLUE = "#2563EB";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function SignupScreen() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSignup = () => {
-    if (!fullName || !email || !password || !confirmPassword) {
+  const setUser = useAuthStore((state) => state.setUser);
+
+
+  const backgroundColor = useThemeColor({}, "background");
+  const inputBg = useThemeColor(
+    { light: "#FAFAFA", dark: "#1F1F1F" },
+    "background",
+  );
+  const borderColor = useThemeColor(
+    { light: "#E5E7EB", dark: "#4B5563" },
+    "icon",
+  );
+  const textColor = useThemeColor({}, "text");
+  const subtitleColor = useThemeColor(
+    { light: "#6B7280", dark: "#D1D5DB" },
+    "icon",
+  );
+  const placeholderColor = useThemeColor(
+    { light: "#6B7280", dark: "#D1D5DB" },
+    "icon",
+  );
+  const toggleBg = useThemeColor(
+    { light: "#fff", dark: "#1F1F1F" },
+    "background",
+  );
+  const toggleTextColor = useThemeColor(
+    { light: "#2563EB", dark: "#2563EB" },
+    "tint",
+  );
+  const forgotTextColor = useThemeColor(
+    { light: "#6B7280", dark: "#9CA3AF" },
+    "icon",
+  );
+  const buttonBg = useThemeColor({ light: "#2563EB", dark: "#2563EB" }, "tint");
+  const linkColor = useThemeColor(
+    { light: "#2563EB", dark: "#2563EB" },
+    "tint",
+  );
+  const titleColor = useThemeColor({}, "text");
+
+  const handleSignup = async () => {
+    if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
       Alert.alert("Missing Info", "Please fill all fields.");
       return;
     }
 
-    const emailRegex = /\S+@\S+\.\S+/;
+    if (fullName.trim().length < 2) {
+      Alert.alert("Invalid Name", "Please enter a valid full name.");
+      return;
+    }
 
-    if (!emailRegex.test(email)) {
+    const emailRegex = /\S+@\S+\.\S+/;
+    if (!emailRegex.test(email.trim())) {
       Alert.alert("Invalid Email", "Enter a valid email address.");
       return;
     }
@@ -45,91 +94,240 @@ export default function SignupScreen() {
       return;
     }
 
-    Alert.alert("Success", "Account created successfully!", [
-      {
-        text: "Continue",
-        onPress: () => router.replace("/(tabs)"),
-      },
-    ]);
+    setLoading(true);
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPassword = password.trim();
+      const normalizedFullName = fullName.trim();
+
+      const response = await registerUser({
+        fullName: normalizedFullName,
+        email: normalizedEmail,
+        password: normalizedPassword,
+      });
+
+      setUser({
+        id: normalizedEmail,
+        email: normalizedEmail,
+        fullName: normalizedFullName,
+        displayName: normalizedFullName,
+        level: "Beginner",
+        token: response?.token,
+      });
+
+      if (response?.token) {
+        router.replace("/(tabs)");
+      } else {
+        Alert.alert(
+          "Account Created!",
+          response?.message || "Account created successfully! Welcome to FitConnect.",
+          [
+            {
+              text: "Continue",
+              onPress: () => router.replace("/(tabs)"),
+            },
+          ],
+        );
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error);
+
+      const isNetworkOrServerError =
+        !error?.response ||
+        error?.code === "ECONNABORTED" ||
+        error?.code === "ERR_NETWORK" ||
+        error?.response?.status >= 500 ||
+        (typeof error?.response?.data?.message === "string" &&
+          (error.response.data.message.includes("JDBC") ||
+            error.response.data.message.includes("SQL") ||
+            error.response.data.message.includes("transaction")));
+
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedFullName = fullName.trim();
+
+      if (isNetworkOrServerError) {
+        Alert.alert(
+          "Server Connection Issue",
+          "The registration server is temporarily unreachable or undergoing maintenance. Would you like to create your account in Offline/Local Mode?",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Continue (Offline Mode)",
+              onPress: () => {
+                setUser({
+                  id: normalizedEmail,
+                  email: normalizedEmail,
+                  fullName: normalizedFullName,
+                  displayName: normalizedFullName,
+                  level: "Beginner",
+                });
+                router.replace("/(tabs)");
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      let errorMessage = "Could not create account. Please check your details and try again.";
+      if (typeof error?.response?.data?.message === "string" && !error.response.data.message.includes("JDBC")) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error?.response?.data?.diagnosticError === "string" && !error.response.data.diagnosticError.includes("JDBC")) {
+        errorMessage = error.response.data.diagnosticError;
+      }
+
+      Alert.alert("Registration Failed", errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  
-
 
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView 
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled" // <-- ADD THIS LINE
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { backgroundColor }]}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        >
-        {/* HEADER */}
-        <ThemedText type="title" style={styles.title}>
-          Join FitConnect
-        </ThemedText>
+      >
+        <View style={styles.headerRow}>
+          <Image
+            source={require("../assets/images/icon.png")}
+            style={styles.logo}
+          />
+          <ThemedText
+            type="title"
+            style={[styles.title, { color: titleColor }]}
+          >
+            Join FitConnect
+          </ThemedText>
+        </View>
 
-        <ThemedText style={styles.subtitle}>
+        <ThemedText style={[styles.subtitle, { color: subtitleColor }]}>
           Build strength. Track progress. Stay consistent.
         </ThemedText>
 
-        {/* FORM */}
         <View style={styles.form}>
           <TextInput
             placeholder="Full Name"
+            placeholderTextColor={placeholderColor}
             value={fullName}
             onChangeText={setFullName}
-            style={styles.input}
+            style={[
+              styles.input,
+              { backgroundColor: inputBg, borderColor, color: textColor },
+            ]}
           />
 
           <TextInput
             placeholder="Email address"
+            placeholderTextColor={placeholderColor}
             value={email}
             onChangeText={setEmail}
-            style={styles.input}
+            style={[
+              styles.input,
+              { backgroundColor: inputBg, borderColor, color: textColor },
+            ]}
             keyboardType="email-address"
+            autoCapitalize="none"
           />
 
-          <TextInput
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-          />
+          <View style={styles.inputRow}>
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor={placeholderColor}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              style={[
+                styles.input,
+                styles.inputWithButton,
+                { backgroundColor: inputBg, borderColor, color: textColor },
+              ]}
+            />
 
-          <TextInput
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            style={styles.input}
-          />
+            <Pressable
+              style={[
+                styles.toggleIconButton,
+                { borderColor, backgroundColor: toggleBg },
+              ]}
+              onPress={() => setShowPassword((value) => !value)}
+            >
+              <MaterialIcons
+                name={showPassword ? "visibility" : "visibility-off"}
+                size={22}
+                color={toggleTextColor}
+              />
+            </Pressable>
+          </View>
+
+          <View style={styles.inputRow}>
+            <TextInput
+              placeholder="Confirm Password"
+              placeholderTextColor={placeholderColor}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+              style={[
+                styles.input,
+                styles.inputWithButton,
+                { backgroundColor: inputBg, borderColor, color: textColor },
+              ]}
+            />
+
+            <Pressable
+              style={[
+                styles.toggleIconButton,
+                { borderColor, backgroundColor: toggleBg },
+              ]}
+              onPress={() => setShowConfirmPassword((value) => !value)}
+            >
+              <MaterialIcons
+                name={showConfirmPassword ? "visibility" : "visibility-off"}
+                size={22}
+                color={toggleTextColor}
+              />
+            </Pressable>
+          </View>
         </View>
 
-        {/* CTA BUTTON */}
-
-        {/* Replace your CTA button with this test setup */}
-
-        <Pressable style={styles.button} onPress={handleSignup}>
-          <ThemedText style={styles.buttonText}>
-            Create Account
+        <Pressable
+          onPress={() => router.push("./forgotPassword")}
+          style={styles.forgotPasswordContainer}
+        >
+          <ThemedText
+            style={[styles.forgotPasswordText, { color: forgotTextColor }]}
+          >
+            Forgot password?
           </ThemedText>
         </Pressable>
 
+        <Pressable
+          style={[
+            styles.button,
+            { backgroundColor: buttonBg, opacity: loading ? 0.7 : 1 },
+          ]}
+          onPress={handleSignup}
+          disabled={loading}
+        >
+          <ThemedText style={styles.buttonText}>
+            {loading ? "Creating Account..." : "Create Account"}
+          </ThemedText>
+        </Pressable>
 
-
-     
-
-        {/* SIGN IN OPTION */}
         <View style={styles.bottomRow}>
-          <ThemedText>Already have an account?</ThemedText>
+          <ThemedText style={{ color: textColor }}>
+            Already have an account?
+          </ThemedText>
 
-          <Pressable onPress={() => router.push("/signin")}>
-            <ThemedText style={styles.link}>Sign In</ThemedText>
+          <Pressable onPress={() => router.push("./signin")}>
+            <ThemedText style={[styles.link, { color: linkColor }]}>
+              Sign In
+            </ThemedText>
           </Pressable>
         </View>
       </ScrollView>
@@ -140,64 +338,93 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
-
   scroll: {
     padding: 24,
     justifyContent: "center",
-    flexGrow:1
+    flexGrow: 1,
   },
-
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: BLUE,
     textAlign: "center",
     marginBottom: 8,
   },
-
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+  logo: {
+    width: 64,
+    height: 64,
+    resizeMode: "contain",
+  },
   subtitle: {
     textAlign: "center",
     marginBottom: 30,
-    color: "#555",
   },
-
   form: {
     gap: 12,
   },
-
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     padding: 14,
     borderRadius: 10,
-    backgroundColor: "#FAFAFA",
   },
-
+  inputWithButton: {
+    flex: 1,
+    marginRight: 8,
+  },
+  toggleIconButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  toggleText: {
+    fontWeight: "600",
+    fontSize: 13,
+  },
   button: {
-    backgroundColor: BLUE,
     padding: 16,
     borderRadius: 10,
     marginTop: 20,
     alignItems: "center",
   },
-
   buttonText: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
   },
-
+  forgotPasswordContainer: {
+    alignSelf: "flex-end",
+    marginTop: 10,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    textDecorationLine: "underline",
+  },
   bottomRow: {
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 20,
     gap: 6,
   },
-
   link: {
-    color: BLUE,
     fontWeight: "700",
   },
 });
