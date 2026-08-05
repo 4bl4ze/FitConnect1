@@ -103,40 +103,54 @@ const BUDDIES_AND_TRAINERS = [
   },
 ];
 
-const RECOMMENDATION_TOPICS = [
+type Topic = {
+  id: string;
+  title: string;
+  category: CategoryFilter;
+  filterKeyword: string;
+  details: string;
+  icon: keyof typeof Ionicons.glyphMap;
+};
+
+const RECOMMENDATION_TOPICS: Topic[] = [
   {
     id: "t1",
     title: "Strength & Power Lifting",
     category: "workouts",
+    filterKeyword: "strength",
     details: "Compound lifts, progressive overload, and rest strategies.",
-    icon: "barbell-outline" as const,
+    icon: "barbell-outline",
   },
   {
     id: "t2",
     title: "HIIT & Cardio Conditioning",
     category: "workouts",
+    filterKeyword: "hiit",
     details: "High-intensity intervals for maximum stamina & fat burn.",
-    icon: "flash-outline" as const,
+    icon: "flash-outline",
   },
   {
     id: "t3",
     title: "Post-Workout Meal & Hydration",
     category: "nutrition",
+    filterKeyword: "recovery",
     details: "Optimal protein-to-carb ratios and electrolyte replenishment.",
-    icon: "restaurant-outline" as const,
+    icon: "restaurant-outline",
   },
   {
     id: "t4",
     title: "Dynamic Warmup Routine",
     category: "warmup",
+    filterKeyword: "warmup",
     details: "Joint mobility exercises to prevent injury and prime muscles.",
-    icon: "flame-outline" as const,
+    icon: "flame-outline",
   },
 ];
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
+  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [recommendedVideos, setRecommendedVideos] = useState<VideoResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [showNearbyGyms, setShowNearbyGyms] = useState(false);
@@ -176,17 +190,25 @@ export default function SearchScreen() {
     "tint",
   );
 
+  // Fetch / filter videos whenever category, topic, or search query changes
   useEffect(() => {
     let isMounted = true;
     const fetchVideos = async () => {
       setLoading(true);
       try {
         let results: VideoResult[] = [];
-        if (query.trim()) {
+
+        if (selectedTopic) {
+          // Filter videos by selected topic keyword & category
+          results = await searchVideos(selectedTopic.filterKeyword, selectedTopic.category);
+        } else if (query.trim()) {
+          // Search videos by query & active category
           results = await searchVideos(query, activeCategory);
         } else {
+          // Get videos filtered strictly by active category
           results = await getRecommendations(activeCategory);
         }
+
         if (isMounted) {
           setRecommendedVideos(results);
         }
@@ -201,7 +223,28 @@ export default function SearchScreen() {
     return () => {
       isMounted = false;
     };
-  }, [activeCategory, query]);
+  }, [activeCategory, query, selectedTopic]);
+
+  const handleCategoryPress = (category: CategoryFilter) => {
+    setActiveCategory(category);
+    setSelectedTopic(null); // Reset topic filter when user switches categories
+  };
+
+  const handleTopicPress = (topic: Topic) => {
+    if (selectedTopic?.id === topic.id) {
+      // Toggle off if tapped again
+      setSelectedTopic(null);
+    } else {
+      setSelectedTopic(topic);
+      setActiveCategory(topic.category); // Automatically match category
+    }
+  };
+
+  const handleClearFilters = () => {
+    setQuery("");
+    setActiveCategory("all");
+    setSelectedTopic(null);
+  };
 
   const handleOpenVideo = (video: VideoResult) => {
     if (video.videoUrl) {
@@ -289,15 +332,18 @@ export default function SearchScreen() {
             placeholder="Search videos, workouts, nutrition..."
             placeholderTextColor={inputPlaceholderColor}
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(text) => {
+              setQuery(text);
+              if (selectedTopic) setSelectedTopic(null);
+            }}
             returnKeyType="search"
             autoCapitalize="none"
             autoCorrect={false}
           />
-          {query ? (
+          {query || selectedTopic || activeCategory !== "all" ? (
             <TouchableOpacity
               style={styles.clearBtn}
-              onPress={() => setQuery("")}
+              onPress={handleClearFilters}
             >
               <Ionicons
                 name="close-circle"
@@ -308,6 +354,23 @@ export default function SearchScreen() {
           ) : null}
         </View>
 
+        {/* Active Filter Indicator Badge */}
+        {selectedTopic ? (
+          <View style={[styles.activeFilterBanner, { backgroundColor: chipBg, borderColor: cardBorderColor }]}>
+            <View style={styles.bannerLeft}>
+              <Ionicons name="funnel" size={14} color={primaryButtonBg} />
+              <ThemedText style={styles.bannerText}>
+                Filtered by Topic: <ThemedText style={{ fontWeight: "700", color: primaryButtonBg }}>{selectedTopic.title}</ThemedText>
+              </ThemedText>
+            </View>
+            <TouchableOpacity onPress={() => setSelectedTopic(null)}>
+              <ThemedText style={{ color: primaryButtonBg, fontSize: 12, fontWeight: "600" }}>
+                Clear Topic
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {/* Category Filter Chips */}
         <ScrollView
           horizontal
@@ -316,7 +379,7 @@ export default function SearchScreen() {
           contentContainerStyle={styles.categoriesContainer}
         >
           {CATEGORIES.map((cat) => {
-            const isActive = activeCategory === cat.id;
+            const isActive = activeCategory === cat.id && !selectedTopic;
             return (
               <TouchableOpacity
                 key={cat.id}
@@ -327,7 +390,7 @@ export default function SearchScreen() {
                     borderColor: isActive ? activeChipBg : cardBorderColor,
                   },
                 ]}
-                onPress={() => setActiveCategory(cat.id)}
+                onPress={() => handleCategoryPress(cat.id)}
               >
                 <Ionicons
                   name={cat.icon}
@@ -354,11 +417,21 @@ export default function SearchScreen() {
           activeCategory === "warmup") && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <ThemedText type="subtitle">Recommended Videos</ThemedText>
+              <ThemedText type="subtitle">
+                {activeCategory === "nutrition"
+                  ? "Nutrition Videos"
+                  : activeCategory === "workouts"
+                  ? "Workout Videos"
+                  : activeCategory === "warmup"
+                  ? "Warmup & Mobility Videos"
+                  : selectedTopic
+                  ? `${selectedTopic.title} Videos`
+                  : "Recommended Videos"}
+              </ThemedText>
               <ThemedText
                 style={{ color: inputPlaceholderColor, fontSize: 13 }}
               >
-                {recommendedVideos.length} videos available
+                {recommendedVideos.length} videos
               </ThemedText>
             </View>
 
@@ -383,8 +456,16 @@ export default function SearchScreen() {
                 <ThemedText
                   style={{ color: inputPlaceholderColor, marginTop: 6 }}
                 >
-                  No recommended videos found for {query || activeCategory}.
+                  No videos found for {selectedTopic?.title || query || activeCategory}.
                 </ThemedText>
+                <TouchableOpacity
+                  style={[styles.resetBtn, { backgroundColor: primaryButtonBg }]}
+                  onPress={handleClearFilters}
+                >
+                  <ThemedText style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 13 }}>
+                    Show All Videos
+                  </ThemedText>
+                </TouchableOpacity>
               </View>
             ) : (
               recommendedVideos.map((video) => (
@@ -451,6 +532,14 @@ export default function SearchScreen() {
                     ) : null}
 
                     <View style={styles.videoMetaRow}>
+                      {video.category ? (
+                        <View style={[styles.categoryTagBadge, { backgroundColor: primaryButtonBg }]}>
+                          <ThemedText style={styles.categoryTagText}>
+                            {video.category.toUpperCase()}
+                          </ThemedText>
+                        </View>
+                      ) : null}
+
                       {video.channel ? (
                         <ThemedText
                           style={[styles.videoMeta, { color: primaryButtonBg }]}
@@ -484,6 +573,84 @@ export default function SearchScreen() {
                 </TouchableOpacity>
               ))
             )}
+          </View>
+        )}
+
+        {/* Recommended Topics & Guides Section */}
+        {filteredTopics.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText type="subtitle">Recommended Topics & Guides</ThemedText>
+              <ThemedText style={{ color: inputPlaceholderColor, fontSize: 12 }}>
+                Tap topic to filter videos
+              </ThemedText>
+            </View>
+
+            {filteredTopics.map((topic) => {
+              const isSelected = selectedTopic?.id === topic.id;
+              return (
+                <TouchableOpacity
+                  key={topic.id}
+                  style={[
+                    styles.topicCard,
+                    {
+                      backgroundColor: isSelected ? activeChipBg : cardBg,
+                      borderColor: isSelected ? activeChipBg : cardBorderColor,
+                    },
+                  ]}
+                  onPress={() => handleTopicPress(topic)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.topicHeader}>
+                    <View
+                      style={[
+                        styles.topicIconBg,
+                        { backgroundColor: isSelected ? "rgba(255,255,255,0.2)" : chipBg },
+                      ]}
+                    >
+                      <Ionicons
+                        name={topic.icon}
+                        size={20}
+                        color={isSelected ? "#FFFFFF" : primaryButtonBg}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <ThemedText
+                        type="defaultSemiBold"
+                        style={{ color: isSelected ? "#FFFFFF" : textColor }}
+                      >
+                        {topic.title}
+                      </ThemedText>
+                      <ThemedText
+                        style={{
+                          color: isSelected ? "rgba(255,255,255,0.85)" : inputPlaceholderColor,
+                          fontSize: 13,
+                          marginTop: 2,
+                        }}
+                      >
+                        {topic.details}
+                      </ThemedText>
+                    </View>
+                    <View
+                      style={[
+                        styles.filterTopicBtn,
+                        { backgroundColor: isSelected ? "#FFFFFF" : chipBg },
+                      ]}
+                    >
+                      <ThemedText
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "700",
+                          color: isSelected ? primaryButtonBg : primaryButtonBg,
+                        }}
+                      >
+                        {isSelected ? "Active ✓" : "Filter Videos"}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -561,50 +728,6 @@ export default function SearchScreen() {
                 ))}
               </ThemedView>
             )}
-          </View>
-        )}
-
-        {/* Recommended Topics */}
-        {filteredTopics.length > 0 && (
-          <View style={styles.section}>
-            <ThemedText type="subtitle">Recommended Topics & Guides</ThemedText>
-
-            {filteredTopics.map((topic) => (
-              <TouchableOpacity
-                key={topic.id}
-                style={[
-                  styles.topicCard,
-                  { backgroundColor: cardBg, borderColor: cardBorderColor },
-                ]}
-                onPress={() => router.push("/AI")}
-              >
-                <View style={styles.topicHeader}>
-                  <View
-                    style={[styles.topicIconBg, { backgroundColor: chipBg }]}
-                  >
-                    <Ionicons
-                      name={topic.icon}
-                      size={20}
-                      color={primaryButtonBg}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <ThemedText type="defaultSemiBold">
-                      {topic.title}
-                    </ThemedText>
-                    <ThemedText
-                      style={{
-                        color: inputPlaceholderColor,
-                        fontSize: 13,
-                        marginTop: 2,
-                      }}
-                    >
-                      {topic.details}
-                    </ThemedText>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
           </View>
         )}
 
@@ -751,6 +874,23 @@ const styles = StyleSheet.create({
     zIndex: 1,
     padding: 4,
   },
+  activeFilterBanner: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  bannerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  bannerText: {
+    fontSize: 13,
+  },
   categoriesScroll: {
     maxHeight: 44,
   },
@@ -778,15 +918,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  seeAllText: {
-    fontSize: 13,
-  },
   emptyBox: {
     padding: 20,
     borderRadius: 14,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
+  },
+  resetBtn: {
+    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   videoCard: {
     borderRadius: 14,
@@ -844,11 +988,6 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 6,
   },
-  videoHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
   videoTitle: {
     fontSize: 15,
     fontWeight: "700",
@@ -860,9 +999,19 @@ const styles = StyleSheet.create({
   videoMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     marginTop: 4,
     flexWrap: "wrap",
+  },
+  categoryTagBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  categoryTagText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "800",
   },
   videoMeta: {
     fontSize: 12,
@@ -876,6 +1025,29 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 11,
     fontWeight: "600",
+  },
+  topicCard: {
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  topicHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  topicIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterTopicBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   nearbyGymsButton: {
     flexDirection: "row",
@@ -922,24 +1094,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 6,
-  },
-  topicCard: {
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  topicHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  topicIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
   },
   buddyCard: {
     flexDirection: "row",
