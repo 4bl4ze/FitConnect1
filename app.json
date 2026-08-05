@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "gymware1",
-    "slug": "gymware1",
+    "name": "FitConnect",
+    "slug": "FitConnect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "gymware1",
+    "scheme": "FitConnect",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
